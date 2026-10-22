@@ -302,7 +302,7 @@ def one_case(
         profile.write_text(
             probe.sandbox_profile(root, codex) +
             "(allow network-outbound (remote ip " +
-            json.dumps(f"127.0.0.1:{receiver.server_port}") + "))\n"
+            json.dumps(f"localhost:{receiver.server_port}") + "))\n"
         )
         canary_root = root / f"canary-{name}"
         (canary_root / "sqlite").mkdir(parents=True, mode=0o700)
@@ -381,7 +381,14 @@ def one_case(
              get_requests=receiver.get_calls, error=state.error,
              cleanup_errors=cleanup_errors)
     if primary is not None:
+        stderr = getattr(primary, "stderr", None)
+        stderr_tail = (
+            stderr[-8192:].decode(errors="replace")
+            if isinstance(stderr, bytes) else str(stderr or "")[-8192:]
+        )
         emit("CASE_FAILURE", name=name, error=str(primary),
+             exit_code=getattr(primary, "returncode", None),
+             stderr_tail=stderr_tail,
              notification_methods=(
                  [x.get("method") for x in client.observed]
                  if client is not None else []

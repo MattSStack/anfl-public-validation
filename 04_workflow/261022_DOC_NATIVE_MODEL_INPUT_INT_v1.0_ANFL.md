@@ -62,9 +62,9 @@ Pinned official release + catalog + frozen native helper
 ### Ordered Change Set and pins
 
 1. `06_api_integration/261022_PY_NATIVE_MODEL_INPUT_INT_v1.0_ANFL.py`:
-   24364 bytes; SHA256 `f3088ea623f1c250a2b5f573cdc56c75f02a329dcc11327e175bc689f60bb45a`.
+   24671 bytes; SHA256 `a04db32f2ca5fa1229c420dbbd6997fa382ac841fa30f1aaa2e1d39072622db5`.
 2. `01_infrastructure/261022_YAML_NATIVE_MODEL_INPUT_CI_INT_v1.0_ANFL.yml`:
-   2487 bytes; SHA256 `2848b37ef135f952ac9f76a8b545e501570a59a1c2bf95cf0cd5c7d42b9b3a4b`.
+   2487 bytes; SHA256 `2d3d361f3333db46306b5733abe7e476a9e9ad953b0a33ea064df6ce79117dbd`.
    Mirror the exact workflow bytes under `.github/workflows/`.
 3. This complete review contains both implementation files.
 4. The existing recovery-support ledger records admission intent and run outcomes.
@@ -137,9 +137,10 @@ explicit SQLite root, static catalog, file credential storage, disabled startup
 hooks/plugins/snapshots/skill instructions and a credential-free custom provider.
 
 Each native child is OS-denied network access except outbound traffic to its
-one exact IPv4 loopback receiver port. Working positive controls and denied
+one exact localhost receiver port. The receiver binds IPv4 only. Working positive controls and denied
 IPv4 TCP/UDP bind/outbound attempts precede it. A permitted-port GET verifies
-the exception. IPv6 is declared denied but not empirically tested.
+the exception. IPv6 loopback at the same port is within the declared exception but is not
+empirically tested. Other destinations remain denied.
 The Python parent has network access for pinned public downloads and binds only
 loopback for capture. Its receiver executes no model. The complete job is not
 an air-gapped environment.
@@ -147,7 +148,7 @@ an air-gapped environment.
 A fixed error alone does not neutralize startup hooks or tools. Fresh default
 state, controlled empty cwd, static configuration and the OS envelope remain
 necessary. The read-permissive sandbox does not attest every read. The trusted
-fresh public runner is the input boundary; no local Mac native process runs.
+fresh public runner is the input boundary; no local Mac Codex process runs.
 
 HTTP body is capped at 1 MiB before allocation. Native stdout/stderr bounds and
 transactional process ownership come from the frozen helper. Each case requires
@@ -169,6 +170,22 @@ lookup ordering. Pending runtime gates: three exact-port canaries, three native
 captures/expected failed turns, clean native and receiver closures, positive
 equality, negative inequality and marker checks. Do not silently relax a failed
 comparison or broaden the network profile.
+
+### Retained first runtime failure and compiler diagnosis
+
+[Run 39776595182](https://github.com/MattSStack/anfl-public-validation/actions/runs/39776595182),
+attempt 1, job119817002402, commit
+`b2c1bed4b5fbbe524bdbb4694e970f5c9928fde9`: failed before any Codex launch.
+Pinned public downloads passed. The per-case receiver closed with zero requests;
+Seatbelt's canary child exited65 while compiling the numeric-host filter.
+
+A local compiler-only diagnostic used `/usr/bin/true`, without Codex, sockets or
+file writes. Numeric `127.0.0.1:port` reported:
+`host must be * or localhost in network address`.
+The official-source spelling `localhost:port` compiled and the child exited0.
+The successor corrects only that endpoint-filter spelling and retains bounded
+stderr diagnostics. It does not widen access to any external network.
+Native initialization, model input and comparison remain unqualified here.
 
 ### Full model-input helper
 
@@ -477,7 +494,7 @@ def one_case(
         profile.write_text(
             probe.sandbox_profile(root, codex) +
             "(allow network-outbound (remote ip " +
-            json.dumps(f"127.0.0.1:{receiver.server_port}") + "))\n"
+            json.dumps(f"localhost:{receiver.server_port}") + "))\n"
         )
         canary_root = root / f"canary-{name}"
         (canary_root / "sqlite").mkdir(parents=True, mode=0o700)
@@ -556,7 +573,14 @@ def one_case(
              get_requests=receiver.get_calls, error=state.error,
              cleanup_errors=cleanup_errors)
     if primary is not None:
+        stderr = getattr(primary, "stderr", None)
+        stderr_tail = (
+            stderr[-8192:].decode(errors="replace")
+            if isinstance(stderr, bytes) else str(stderr or "")[-8192:]
+        )
         emit("CASE_FAILURE", name=name, error=str(primary),
+             exit_code=getattr(primary, "returncode", None),
+             stderr_tail=stderr_tail,
              notification_methods=(
                  [x.get("method") for x in client.observed]
                  if client is not None else []
@@ -770,7 +794,7 @@ jobs:
         shell: python
         env:
           ANFL_INPUT_REVISION: ${{github.sha}}
-          ANFL_INPUT_SHA256: f3088ea623f1c250a2b5f573cdc56c75f02a329dcc11327e175bc689f60bb45a
+          ANFL_INPUT_SHA256: a04db32f2ca5fa1229c420dbbd6997fa382ac841fa30f1aaa2e1d39072622db5
         run: |
           import hashlib
           import os
