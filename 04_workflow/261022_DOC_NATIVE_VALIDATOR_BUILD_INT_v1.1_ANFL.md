@@ -7,7 +7,7 @@ Layer: 06_api_integration / 04_workflow
 
 ## BLUF
 
-Version 1.1 adds an explicitly selected call to the actual native ModelContextScan for bounded, caller-supplied newest-to-oldest records. Its default decoder behavior is preserved. The source has 54 authored tests, including the 32 byte-preserved baseline tests; v1.1 compilation and execution remain pending.
+Version 1.1 adds an explicitly selected call to the actual native ModelContextScan for bounded, caller-supplied newest-to-oldest records. Its default decoder behavior is preserved. All 54 native tests and both boundary CLI cases passed, and the delivered ARM64 binary, manifest, checksum and exact source tag were verified.
 
 ## Executive
 
@@ -19,15 +19,13 @@ No actual recovery record, protected history, private helper, key or media is us
 
 ```yaml
 component: "The Reactor native paginated boundary helper"
-status: "in_progress"
+status: "completed"
 version: "1.1"
 position_classification: "B"
 layer: "06"
-progress_percentage: 65
+progress_percentage: 100
 dependencies:
-  - "Independent CI integration review"
-  - "54 native tests and boundary CLI checks"
-  - "Exact draft asset and delivered-byte verification"
+  - "Actual input, source order/coverage and isolated consumer proof remain Owner-controlled"
 ```
 
 ## Architecture
@@ -98,9 +96,9 @@ A standalone history_base terminates locally; referenced lineage requires its ba
 
 ### Validation
 
-Root verified that the complete original test/helper section is byte-preserved in v1.1. Both reviewers approved the new source statically. The 22 new tests cover actual native completion, newer-incomplete suppression, missing fields, older headers/prefixes, strict post-completion validation, EOF failure, caps, chunking and private-marker suppression. These tests are authored and have not yet run.
+Root verified that the complete original test/helper section is byte-preserved in v1.1. Both reviewers approved the new source statically. The 22 new tests cover actual native completion, newer-incomplete suppression, missing fields, older headers/prefixes, strict post-completion validation, EOF failure, caps, chunking and private-marker suppression. All 54 tests passed in the exact remote native run, with zero failed, ignored, measured or filtered tests.
 
-The CI integration requires all 54 native tests. A positive CLI case supplies a complete compaction then older incomplete data and requires boundary success, two decoded records, one selected record and one older ignored record. A negative case supplies newer incomplete then older complete and requires nonzero exit, NATIVE_BOUNDARY_NOT_FOUND and no private-marker leakage.
+The successful CI integration required all 54 native tests. A positive CLI case supplies a complete compaction then older incomplete data and requires boundary success, two decoded records, one selected record and one older ignored record. A negative case supplies newer incomplete then older complete and requires nonzero exit, NATIVE_BOUNDARY_NOT_FOUND and no private-marker leakage.
 
 The current workflow's two zsh blocks and three embedded Python blocks passed local syntax parsing against the exact intended file bytes. No local Rust toolchain or build was used.
 
@@ -109,6 +107,27 @@ The current workflow's two zsh blocks and three embedded Python blocks passed lo
 Use the existing strict manifest-backed lock auditor before compilation. External packages, dependency lists and all unapproved lock changes are refused. Both tests and build use --locked, with pre/post exact resolved-lock binding.
 
 Publication remains a bounded draft release, with an explicit source tag created and singularly read back at the tested build commit. Both receipts must match ref, commit type and SHA. A conflict, error or unknown effect stops for reconciliation. The release receives only one binary of at most 64 MiB, one manifest of at most 64 KiB and checksums.
+
+### Qualified v1.1 artifact
+
+- Successful run: 39744616366, attempt 1, job 119709886968, duration 9m37s.
+- Tested commit: fb3c2db9c3c2349b73e1cbdf1552c40f57d59e67.
+- Test log: 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.
+- Native audit: 160 manifest-backed local stamps, 1,314 external packages preserved, 449/449 descriptors closed, 24/24 policy tests.
+- Actual resolved lock: cae541406f7ec43a418e126be2bcd5de00b243e7bbf6382570028727d99c1069.
+- Draft release: 420455258, exactly three uploaded assets.
+- Exact tag: anfl-native-261022-39744616366-1, verified commit fb3c2db9c3c2349b73e1cbdf1552c40f57d59e67.
+- Binary asset 665142237: 45,270,672 bytes, SHA256 904c1c9ca40176cef50460d8ee4b4945524275b4d39aa0a60f535ebb027786cb.
+- Manifest asset 665142236: 22,448 bytes, SHA256 8fcb802f6417aa7baf6c66b617b725c67ad2bb5aca127f847cd1380cf80d5215.
+- Checksum asset 665142244: 126 bytes, SHA256 a6ad64f44d9721a65ac5aa2504a153f80673c027ec6d0c992e3c36fcb9a32932.
+
+The full binary was independently streamed through SHA256 and a bounded Mach-O header reader, without saving or executing it. It matches manifest, checksum and Release API digest; the header identifies an ARM64 executable. Its eight declared dynamic dependencies are Apple System Library or /usr/lib paths. Current-host runtime behavior remains untested.
+
+The positive CLI returned MODEL_CONTEXT_BOUNDARY_OK with two decoded records, one chronological selected record and one older ignored record. The negative case returned NATIVE_BOUNDARY_NOT_FOUND and nonzero exit; marker leakage checks passed. Completion describes supplied records, without authenticating their order or source coverage.
+
+The workflow's explicit tag creation, exact readback and two-receipt checks were executed successfully in this run. No manual tag repair was required.
+
+Official app-server documentation separately confirms that summary reads and resumptions have different lifecycle behavior. It establishes the supported entrypoint contract, without proving the pinned isolated replacement path at runtime. [OpenAI app-server documentation](https://learn.chatgpt.com/docs/app-server)
 
 ### Threat notes
 
