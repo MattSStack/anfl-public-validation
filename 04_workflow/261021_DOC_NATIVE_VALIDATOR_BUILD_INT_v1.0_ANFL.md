@@ -1,35 +1,35 @@
 # The Reactor™ native validator build contract
 
 Created: 2026-10-22T05:47:00Z
-Updated: 2026-10-22T06:27:23Z
+Updated: 2026-10-22T06:51:59Z
 Version: 1.0
 Classification: B
 Layers: 01 infrastructure / 06 API integration
 
 ## BLUF
 
-Build the bounded stdin validator against the exact official OpenAI Codex source commit on an isolated standard public GitHub macOS ARM64 runner. The first run stopped before compilation because the pinned upstream lockfile contains stale local release-version stamps. The revised pipeline accepts only manifest-proven local version stamps, through a strict audited proposal, before running all native compilation with --locked.
+The bounded native stdin validator compiled successfully against the exact official OpenAI Codex source commit on a standard public GitHub macOS ARM64 runner. All 32 native tests passed; the strict lock audit and 24 policy tests passed. Delivered binary bytes, manifest, checksum file and the exact source tag were independently reconciled.
 
 ## Executive
 
-The existing validator adds one auto-discovered binary source to the public codex-rollout package and introduces no dependency. A separate standard-library Python auditor compares the original and resolver-proposed lockfiles, discovers the actual public workspace manifests, and refuses every external package change, dependency-list change, local roster change, metadata change, or unproved local version. It accepts local 0.0.0 to 0.163.0 only when backed by that package's actual manifest.
+This closes the public-source native compilation, synthetic-test and artifact-delivery gaps. It does not establish actual recovery-record validity, semantic completeness, lineage, compaction eligibility, native resume equivalence, current-host runtime readiness or restoration success. Actual input and execution remain separately controlled by the recovery Owner.
 
-This repository is an additive public build mirror. It receives only generated public code, public upstream source and synthetic inputs. All recovery payloads, operator credentials, private histories and keys remain outside it.
+The existing validator adds one auto-discovered binary source to codex-rollout and introduces no dependency. A standard-library Python auditor permits only actual-manifest-backed local release-version stamps in the resolver proposal before locked native tests and build. This public repository is an additive build mirror containing generated public code, public upstream references and synthetic evidence.
 
 ## Implementation Status
 
 ```yaml
-component: "The Reactor native validator remote build"
-status: "in_progress"
+component: "The Reactor public native validator artifact"
+status: "completed"
 version: "1.0"
 position_classification: "B"
 layer: "06"
-progress_percentage: 65
+progress_percentage: 100
 dependencies:
-  - "Actual remote manifest walk and strict lock audit"
-  - "32 native Rust tests and bounded synthetic CLI checks"
-  - "Verified draft release assets and manifest"
+  - "Actual recovery-input qualification and host runtime readiness remain separate"
 ```
+
+The forward publication-only workflow correction is independently reviewed and syntax checked. It has not been rerun in CI; the successful artifact remains tied to its original tested workflow and commit.
 
 ## Architecture
 
@@ -42,77 +42,117 @@ Pinned public helper + auditor + upstream commit
                        |
         locked native tests → locked build
                        |
-   unchanged lock + synthetic CLI + ARM64 checks
+      synthetic CLI + ARM64 + unchanged lock
                        |
-       bounded draft release + build manifest
+        draft release + checked source tag
+                       |
+       delivered-byte hashes → qualified helper
 ```
 
-Upstream commit: 83086188ae0614bd882818ff1aa23f3194962012.
-Upstream original Cargo.lock SHA256: 17cdd862471774ba7aef836aaf0a0a3ed76bd23e503b1fc7278c89d1f2719d03.
-Rust: 1.95.0. Target: aarch64-apple-darwin. Runner: standard macos-15, ARM64.
-Helper: 30466 bytes, SHA256 65c4f7a10788052e94a5fa16a12d93d419fcbddfc27ecee6fa3577957f065ddf.
-Auditor: 26532 bytes, SHA256 c8a14e151547f4ce81aff8501f7e874ad3a5dc9b753a0af1691555b1648c5e1b.
-Workflow: 11961 bytes, SHA256 dbdf77b79f806b94bf6465891810d935bf4815bfcdccee251dbf5ae5166177c6.
-The Rust successor changes a header comment only; its executable body matches the independently reviewed source.
+### Exact build identity
+
+- Repository: MattSStack/anfl-public-validation.
+- Tested build commit: d2ecfd3fd7aca83a57ebc198c1986042749d2685.
+- Successful run: 39734133444, attempt 1; job 119675779524; duration 10m26s.
+- Upstream: 83086188ae0614bd882818ff1aa23f3194962012; release version 0.163.0.
+- Rust: 1.95.0; target aarch64-apple-darwin; actual runner macOS ARM64.
+- Helper: 30466 bytes; SHA256 65c4f7a10788052e94a5fa16a12d93d419fcbddfc27ecee6fa3577957f065ddf.
+- Auditor: 26532 bytes; SHA256 c8a14e151547f4ce81aff8501f7e874ad3a5dc9b753a0af1691555b1648c5e1b.
+- Tested workflow: 11961 bytes; SHA256 dbdf77b79f806b94bf6465891810d935bf4815bfcdccee251dbf5ae5166177c6.
+- Current forward workflow: 12862 bytes; SHA256 e0a84abe9274c8faac8f7e9b8b145631f58ab40439618864bfb4a31f07cdfb19.
+- Original lock SHA256: 17cdd862471774ba7aef836aaf0a0a3ed76bd23e503b1fc7278c89d1f2719d03.
+- Audited resolved lock SHA256: cae541406f7ec43a418e126be2bcd5de00b243e7bbf6382570028727d99c1069.
+- Workspace manifest SHA256: b017f28f91f7506b730c247ffb3dab5250d9848514c194331fd774836d480f0b.
+
+### Delivered draft assets
+
+Release ID 420382538 remains a draft. Source tag anfl-native-261021-39734133444-1 resolves to the tested commit above; the exact ref was created and read back after draft creation left it absent.
+
+| Asset | ID | Bytes | SHA256 |
+|---|---:|---:|---|
+| 261021_BIN_NATIVE_ROLLOUT_VALIDATOR_ARM64_INT_v1.0_ANFL.bin | 664927365 | 45244864 | 82118f3cfe0ce10e929b224bc8662579f6dcd2b10d9353bab1db92ba9fadcf96 |
+| 261021_JSON_NATIVE_VALIDATOR_BUILD_INT_v1.0_ANFL.json | 664927362 | 21420 | 2a8c6ff93bbed91e0754297a84f1a1bdfab3770046afa87f4da81f007dce1553 |
+| SHA256SUMS | 664927360 | 126 | 09411efdbb87ab0b8d44e212e02ec7e68b3c450e73a175970b0301ed80da1a4b |
+
+The binary was streamed through a bounded hash/header reader, without filesystem writes or execution. Its full hash matches the manifest, checksum file and Release API digest. Its header is ARM64 Mach-O executable. The manifest reports eight dynamic dependencies, all under Apple System Library or /usr/lib. These checks do not prove runtime compatibility on a particular current host.
+
+The first 60-second verification read ended at 39,845,888 bytes and was rejected as incomplete. One explicitly initiated 120-second read completed with the exact expected 45,244,864 bytes and digest. No partial digest was accepted.
 
 ## Implementation
 
-The validator reads stdin only. Limits are 8 MiB total, 4 MiB per record, 10,000 records, 8,192-byte scratch reads, and 4,096-byte fixed-schema output. It requires final LF and EOF, stops at the first native decode error, suppresses raw parser/panic payloads, and treats output errors as failure. It invokes the official parse_rollout_line_bytes decoder rather than a substitute schema. Typed variant and compaction counts do not prove lossless recovery, lineage or coverage. Byte limits are not a hard process heap or wall-time limit.
+The validator reads stdin only. Limits are 8 MiB aggregate, 4 MiB per record, 10,000 records, 8,192-byte scratch reads and 4,096-byte fixed-schema output. It requires final LF and EOF, stops at the first native decode error, suppresses raw parser/panic payloads and treats output errors as failure. It invokes the official parse_rollout_line_bytes decoder. Typed counts do not prove losslessness, lineage or coverage. These are input/output limits rather than a measured hard heap or wall-time cap.
 
-The auditor preserves strict TOML types, exact Boolean workspace inheritance, complete external package dictionaries, dependency qualifiers and ordering. It uses bounded no-follow regular-file reads, descriptor closure accounting, nonblocking leaf opens and memoized glob matching. Its 24 passing memory-only tests qualify comparison and path policy; they do not qualify the entire filesystem walker. The CI step must exercise that walker on the pinned public checkout.
+The auditor preserves strict TOML types, exact Boolean workspace inheritance, complete external package dictionaries, dependency qualifiers and ordering. It uses bounded no-follow regular-file reads, positive descriptor closure accounting, nonblocking leaf opens and memoized glob matching. The actual public workspace walk accepted exactly 160 actual-manifest-backed local 0.0.0 to 0.163.0 stamps, preserved all 1,314 external packages, and closed 449/449 opened descriptors.
 
-The workflow validates the original lock pin, creates a resolver-only proposal with cargo tree, audits it, and immediately binds the actual lock bytes to the auditor's resolved SHA. Native tests and build both use --locked. Post-build comparison requires the same resolved lock bytes. The git diff restriction covers tracked changes; the injected helper source is an intentional untracked input. Initial source hashing supplies its provenance, without claiming the diff check proves all untracked paths unchanged.
+The tested workflow verified the original lock, created a resolver-only proposal with cargo tree, audited it and immediately bound actual lock bytes to the auditor's resolved SHA. Both native operations used --locked; the post-build lock matched exactly. The tracked git diff restriction does not cover every untracked path: the injected helper is intentional and initially source-hashed.
 
-### Validation and current evidence
+The forward workflow now explicitly creates a source tag at the verified build SHA, reads that singular reference back, and checks both JSON receipts for exact ref, commit type and SHA before gh release create --verify-tag --draft. A conflict, error or unknown effect stops for reconciliation. This is a checked sequence, without an atomic lock against another authorized writer.
 
-- Rust executable source: independent static review passed; 32 native tests authored, not yet observed running.
-- Auditor: corrected pin independently approved; 24/24 memory-only tests passed, zero filesystem fixtures.
-- Workflow: revised integration review passed; two zsh blocks and two embedded Python blocks parsed locally.
-- First CI run 39730551641 at commit 6edf0eff78ab25e25acb6b8c74ea207b57d9bedd failed before compilation on --locked at 2026-10-22T05:53:38Z. No native tests ran and release publication was skipped.
-- Revised run: pending. No usable native artifact is claimed at this stage.
+### Validation evidence
+
+- Corrected source and auditor independently reviewed.
+- 24/24 policy self-tests passed; their memory-only scope remains explicit.
+- Actual public workspace traversal and strict lock audit passed.
+- 32/32 native Rust tests passed: zero failed, ignored, measured or filtered.
+- Synthetic valid compacted input returned OK, one record and one compacted variant.
+- Synthetic malformed input returned NATIVE_DECODE with nonzero status and no marker leakage. Exact exit status 2 was not separately established by this workflow.
+- Successful build manifest joins run ID, attempt, commit, source pins, lock pins, toolchain and binary digest.
+- Exact three draft assets were present and uploaded; delivered manifest and checksum digests match Release API values.
+- Current publication revision: independent static approval; two zsh and three Python AST blocks parsed; exact Git-ref mechanism demonstrated separately. It is not CI execution evidence for that revision.
+
+### Retained failure accounting
+
+Run 39730551641 at 6edf0eff78ab25e25acb6b8c74ea207b57d9bedd failed before native compilation because the pinned original lockfile had stale local release stamps. It ran zero native tests and skipped release publication. The correction preserves all external dependencies and all dependency edges.
+
+A local String.replace replacement-text expansion was also caught while preparing the forward revision/review text. Callback substitution and independent exact-content checks correct the generated files before forward publication. Tested source blobs and the qualified binary were unaffected.
 
 ### Threat notes
 
-The public runner downloads exact generated source pins and the exact public upstream commit. Build steps receive no GH_TOKEN or operator secrets. The job has contents:write capability because draft release upload requires it; that permission is broad within this isolated repository, rather than release-only. GH_TOKEN is explicitly provided only to the publication step. There is no attempt to inspect or change local credentials.
+Build steps receive no operator credentials or GH_TOKEN. Exact generated source pins and exact public upstream commit bind the build. The job's contents:write permission is broad within the isolated repository; GH_TOKEN is explicitly exposed only to publication. Existing local GitHub authentication is used through its normal CLI; no token is printed or copied manually.
 
-The job-level public-repository guard executes before runner allocation. Publication additionally checks that the current default-branch head still matches the build commit. Draft assets are not a public distribution release, and third-party notice review remains necessary before public binary distribution. Release creation and uploads are not atomic: reconcile partial draft assets after a publication failure; do not assume no remote write occurred.
+Public-repository admission is checked before runner allocation. Current-main identity is checked before publication. Draft release assets remain unpublished; third-party notices require review before public binary distribution. Tag creation, draft creation and asset upload are separate mutable operations. Reconcile partial tag/draft/asset state after any failed or uncertain response. Neither a draft nor a checked tag observation supplies immutable-release protection.
+
+No actual recovery source, private candidate, protected history, operator key or media was submitted. This build grants no Source, restore, mount, cleanup, key or cutover admission.
 
 ### Cost and environment
 
-Standard GitHub-hosted runner compute in public repositories is documented as free. This workflow uses no larger runner, Actions artifact upload, cache, Packages, LFS, custom image or paid cloud resource. Release delivery cost is a qualified inference from current no-quota release documentation plus a historical GitHub Staff no-financial-impact answer; a current explicit zero-dollar price guarantee was not found. Assets are capped at one binary of at most 64 MiB, one manifest of at most 64 KiB, and a checksum file.
+Standard public GitHub-hosted runner compute is documented free. This uses no larger runner, Actions artifact upload, cache, Packages, LFS, custom image or paid cloud resource. Small draft-release delivery cost remains a qualified inference from current no-quota release documentation plus a historical GitHub Staff answer; a current explicit zero-dollar guarantee was not found.
 
-No Rust toolchain, native build, bulk source checkout or binary download is performed on the local Mac. New durable source and receipts stay on the authorized external workspace.
+No local Rust installation, compilation, bulk checkout or binary file was created. Durable authored code, docs and receipts remain on the authorized external workspace.
 
 ## Ops / Runbook
 
-1. Publish the exact reviewed public source, auditor, workflow and contract in one non-forced commit. Mirror the canonical workflow blob into .github/workflows using the same Git blob SHA.
-2. Record dispatch intent before one workflow_dispatch. Capture commit, run and job IDs; an uncertain response is reconciled against remote state before any retry.
-3. Observe only that owned CI job. On an audit or compilation failure, inspect bounded public logs, preserve the failed run and correct the demonstrated cause.
-4. On success, verify all 32 native tests, the actual lock audit, ARM64/toolchain identity, source/lock/binary pins and draft asset count/size.
-5. Do not run private inputs or treat this helper build as authorization to access recovery sources. Any later candidate qualification remains separately controlled by the recovery Owner.
+1. Keep artifact use pinned to the successful tested commit, source hashes, manifest and delivered binary hash above. Current workflow changes do not change that artifact's provenance.
+2. Download draft assets only through already-authorized authenticated GitHub access. Verify exact asset IDs, caps, bytes and hashes before any save or execution.
+3. Any actual input, host execution, resource-floor decision or recovery qualification remains Owner-controlled. This artifact alone admits none of those actions.
+4. For a future build, publish exact reviewed inputs and one canonical workflow blob mirrored into .github/workflows. Record dispatch intent once and capture exact run/job IDs.
+5. After a failed or unknown publication effect, reconcile exact tag, draft and assets before retry. Do not force-update or silently reuse a tag.
+6. Preserve prior run evidence and retain the same external recovery target.
 
 ### Rollback
 
-Before branch update, staged Git blobs have no effect on the active workflow. After update, use a normal reviewed revert commit; do not force-push. Cancel only an explicitly identified owned CI run when necessary. Reconcile and remove only its identified partial draft release if rollback requires it; never apply broad cleanup. Preserve the append-only run accounting and failure evidence.
+Use a normal reviewed revert commit; do not force-push. Cancel only an explicitly identified owned run if necessary. Retain partial tag/draft state until an explicit scoped reconciliation establishes the appropriate action. Do not apply broad cleanup or erase failure accounting. Reverting the forward workflow does not invalidate or replace the existing qualified artifact.
 
 ### Sources
 
-- [Exact official native decoder source](https://github.com/openai/codex/blob/83086188ae0614bd882818ff1aa23f3194962012/codex-rs/rollout/src/lib.rs)
+- [Successful native CI run](https://github.com/MattSStack/anfl-public-validation/actions/runs/39734133444)
+- [Exact official native decoder](https://github.com/openai/codex/blob/83086188ae0614bd882818ff1aa23f3194962012/codex-rs/rollout/src/lib.rs)
 - [Exact official workspace manifest](https://github.com/openai/codex/blob/83086188ae0614bd882818ff1aa23f3194962012/codex-rs/Cargo.toml)
-- [Standard public GitHub runner specifications](https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for-public-repositories)
+- [Standard public runner specifications](https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for-public-repositories)
 - [Free use of GitHub Actions](https://docs.github.com/en/billing/concepts/product-billing/github-actions#free-use-of-github-actions)
 - [Release storage and bandwidth quotas](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas)
 - [Historical GitHub Staff cost answer](https://github.com/orgs/community/discussions/127096)
-- [Workflow permissions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions)
+- [GitHub CLI release creation and verify-tag](https://cli.github.com/manual/gh_release_create)
+- [Git references API](https://docs.github.com/en/rest/git/refs)
 
 ## Change Set and complete source snapshots
 
-1. Native Rust stdin validator.
-2. Strict Python lock auditor.
-3. Canonical workflow; its .github/workflows copy must use the identical Git blob.
-4. Build contract and local run accounting.
+1. Native Rust stdin validator, unchanged from the qualified source pin.
+2. Strict Python lock auditor, unchanged from the qualified source pin.
+3. Current canonical workflow with the publication-only correction.
+4. Build contract and local execution ledger.
 
-Each code fence below contains the complete canonical source at the stated pin. The LF immediately before a closing fence belongs to the source when the source already ends in LF; no additional presentation-only blank line is inserted.
+Each code fence contains the complete current canonical source. No extra presentation-only blank line is inserted before the closing fence.
 
 ### 06_api_integration/261021_RUST_NATIVE_ROLLOUT_VALIDATOR_INT_v1.0_ANFL.rs
 
@@ -1693,7 +1733,7 @@ if __name__ == "__main__":
 ````yaml
 # File: 261021_YAML_NATIVE_VALIDATOR_CI_INT_v1.0_ANFL.yml
 # Product: The Reactor(TM)
-# Status: implemented; remote compilation and synthetic tests pending.
+# Status: native build qualified; explicit draft-tag binding revision.
 # Public build inputs only. No recovery payloads, caches or Actions artifacts.
 name: The Reactor native validator
 on:
@@ -1729,7 +1769,7 @@ jobs:
           [[ "$GITHUB_REPOSITORY" == "MattSStack/anfl-public-validation" ]]
           [[ "$REPO_IS_PRIVATE" == "false" ]]
           [[ "$(uname -m)" == "arm64" ]]
-          [[ "$GITHUB_SHA" =~ '^[0-9a-f]{40};const startedAt=new Date().toISOString();let body=spec.body;if(spec.filePath){const f=fs.openSync(spec.filePath,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW);let b;try{if(fs.fstatSync(f).dev!==16777246)throw Error('externaldevice');b=fs.readFileSync(f);}finally{fs.closeSync(f);}if(crypto.createHash('sha256').update(b).digest('hex')!==spec.fileSha)throw Error('sourcepin');body={...body,content:b.toString('base64')};}const args=['api','--method',spec.method,spec.endpoint,'--input','-','--jq',spec.jq];const r=cp.spawnSync('/opt/homebrew/bin/gh',args,{input:JSON.stringify(body),encoding:'utf8',timeout:30000,maxBuffer:200000,env:{...process.env,GH_NO_UPDATE_NOTIFIER:'1',GH_NO_EXTENSION_UPDATE_NOTIFIER:'1',GH_PROMPT_DISABLED:'1'}});console.log(JSON.stringify({startedAt,completedAt:new Date().toISOString(),endpoint:spec.endpoint,exit:r.status,signal:r.signal,stdout:r.stdout,stderr:r.stderr,error:r.error?String(r.error):null})); ]]
+          [[ "$GITHUB_SHA" =~ '^[0-9a-f]{40}$' ]]
           task_root="$(mktemp -d "$RUNNER_TEMP/anfl-native.XXXXXX")"
           publish_root="$RUNNER_TEMP/anfl-native-publish"
           mkdir "$publish_root"
@@ -1914,6 +1954,24 @@ jobs:
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
           [[ "$current_main" == "$GITHUB_SHA" ]]
           tag="anfl-native-261021-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          # Reconcile partial tag/draft state after any failed or unknown effect.
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f "ref=refs/tags/$tag" -f "sha=$GITHUB_SHA" \
+            > "$publish_root/tag-created.json"
+          gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" \
+            > "$publish_root/tag-readback.json"
+          python3 - "$publish_root/tag-created.json" \
+            "$publish_root/tag-readback.json" "$tag" "$GITHUB_SHA" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+
+          for receipt_path in sys.argv[1:3]:
+              binding = json.loads(Path(receipt_path).read_text())
+              assert binding["ref"] == "refs/tags/" + sys.argv[3]
+              assert binding["object"]["type"] == "commit"
+              assert binding["object"]["sha"] == sys.argv[4]
+          PY
           notes="$publish_root/release-notes.txt"
           printf '%s\n' \
             'The Reactor native typed record validator, public synthetic qualification.' \
@@ -1923,7 +1981,7 @@ jobs:
             'No protected input was accessed. Owner input admission remains separate.' \
             > "$notes"
           gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" --draft \
+            --target "$GITHUB_SHA" --verify-tag --draft \
             --title 'The Reactor native validator 1.0' --notes-file "$notes" \
             "$publish_root/$BINARY_NAME" \
             "$publish_root/$MANIFEST_NAME" \

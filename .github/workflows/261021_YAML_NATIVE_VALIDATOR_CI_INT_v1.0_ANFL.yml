@@ -1,6 +1,6 @@
 # File: 261021_YAML_NATIVE_VALIDATOR_CI_INT_v1.0_ANFL.yml
 # Product: The Reactor(TM)
-# Status: implemented; remote compilation and synthetic tests pending.
+# Status: native build qualified; explicit draft-tag binding revision.
 # Public build inputs only. No recovery payloads, caches or Actions artifacts.
 name: The Reactor native validator
 on:
@@ -221,6 +221,24 @@ jobs:
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
           [[ "$current_main" == "$GITHUB_SHA" ]]
           tag="anfl-native-261021-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          # Reconcile partial tag/draft state after any failed or unknown effect.
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f "ref=refs/tags/$tag" -f "sha=$GITHUB_SHA" \
+            > "$publish_root/tag-created.json"
+          gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" \
+            > "$publish_root/tag-readback.json"
+          python3 - "$publish_root/tag-created.json" \
+            "$publish_root/tag-readback.json" "$tag" "$GITHUB_SHA" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+
+          for receipt_path in sys.argv[1:3]:
+              binding = json.loads(Path(receipt_path).read_text())
+              assert binding["ref"] == "refs/tags/" + sys.argv[3]
+              assert binding["object"]["type"] == "commit"
+              assert binding["object"]["sha"] == sys.argv[4]
+          PY
           notes="$publish_root/release-notes.txt"
           printf '%s\n' \
             'The Reactor native typed record validator, public synthetic qualification.' \
@@ -230,7 +248,7 @@ jobs:
             'No protected input was accessed. Owner input admission remains separate.' \
             > "$notes"
           gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" --draft \
+            --target "$GITHUB_SHA" --verify-tag --draft \
             --title 'The Reactor native validator 1.0' --notes-file "$notes" \
             "$publish_root/$BINARY_NAME" \
             "$publish_root/$MANIFEST_NAME" \
