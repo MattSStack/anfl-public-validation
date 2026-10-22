@@ -4,9 +4,9 @@
 BLUF: Observe the released Codex 0.163.0 model-request input for three public
 synthetic histories: full, bounded checkpoint suffix, and missing checkpoint.
 This distinct test requests three synthetic turns against a loopback-only
-receiver that executes no model and returns fixed HTTP 400. Three native captures
-and clean closures are observed; the explicit environment-ID comparison successor
-is awaiting qualification.
+receiver that executes no model and returns fixed HTTP 400. Released-native
+run39779747780 qualified positive equality, negative inequality, marker behavior
+and three clean native/receiver closures. Actual recovery-input proof remains open.
 
 ## Executive
 
@@ -24,14 +24,14 @@ state equality, OpenAI-provider behavior or retirement authority.
 
 ```yaml
 component: "Released native synthetic model-input qualification"
-status: "in_progress"
+status: "completed"
 version: "1.0"
 position_classification: "B"
 layer: "06"
-progress_percentage: 0
+progress_percentage: 100
 dependencies:
-  - "Finite independent proof and lifecycle reviews"
-  - "Actual public remote execution"
+  - "Pinned official release and frozen dependency"
+  - "Actual recovery-input qualification is a separate open obligation"
 ```
 
 ## Architecture
@@ -184,10 +184,8 @@ No native process was started for these local checks.
 
 Independent reviews corrected raw Python equality, fresh native IDs, pre-close
 counter snapshots, response-write accounting, receiver ownership and catalog
-lookup ordering. Pending runtime gates: three exact-port canaries, three native
-captures/expected failed turns, clean native and receiver closures, positive
-equality, negative inequality and marker checks. Do not silently relax a failed
-comparison or broaden the network profile.
+lookup ordering. Runtime gates passed in the qualified run below. No further
+rerun is needed for this unchanged synthetic mechanism.
 
 ### Retained first runtime failure and compiler diagnosis
 
@@ -237,6 +235,40 @@ across the three cases. Historical fixture IDs were preserved. This is a retaine
 failure, not a qualified equality result. The successor explicitly declares the
 narrow environment-ID class described above and adds pure tests for changed
 content, missing/current-request position and unknown-message refusal.
+
+### Qualified released-native runtime result
+
+[Run 39779747780](https://github.com/MattSStack/anfl-public-validation/actions/runs/39779747780),
+attempt1/job119827658138, commit
+`8f5d3972335e42ca34219730e25bce22cd297099`, completed successfully.
+Qualification event: 2026-10-22 12:37:22.451909 UTC.
+
+| Input | Compared bytes | Compared SHA256 | Older prefix | Replacement |
+| --- | ---: | --- | --- | --- |
+| Full | 43925 | `617c76ff047362d301cf5bc2d1bd761f4444c8a76b7e5f84fc8d3e550dfafcb0` | absent | present |
+| Bounded | 43925 | `617c76ff047362d301cf5bc2d1bd761f4444c8a76b7e5f84fc8d3e550dfafcb0` | absent | present |
+| Missing checkpoint | 43922 | `f12f0e5a128ea944a8cdd7f91bd6bde4822f2563a37bac97fd1cdbb2f23f5e16` | present | absent |
+
+All cases retained tail and request markers, fixed historical IDs, roles/order and
+content. Raw full/bounded input bytes differed because generated message IDs
+differed. Only the declared top-level unreferenced message IDs were normalized;
+the environment message content was retained. Per-case raw hashes and the complete
+normalization map are in the run logs and local evidence ledger.
+
+Exactly three synthetic turn requests, three POST captures and three completed
+fixed400 writes occurred. Native exit0/no force/group absence and receiver
+socket-close/thread-join were established for all three cases. The receiver
+executed no model. OS network canaries and permitted-port GET passed each time.
+IPv6 at the same allowed loopback port was not empirically tested.
+
+Official release binary: 249,952,688 bytes, SHA256
+`8813367285524ac798dd96d1b071aea30d58708c7226fd236cd275cf1cfdee31`.
+The frozen native consumer/scanner blobs were independently read back unchanged.
+
+This result does not establish actual retained-checkpoint acceptance, hidden
+reconstruction-state equality, OpenAI-provider equivalence, opaque ciphertext
+semantics, actual custody/readback, source acquisition, retirement or cutover.
+Preserve prior failed runs; do not replay them or count synthetic bytes as recovery.
 
 ### Full model-input helper
 
