@@ -19,8 +19,10 @@ jobs:
       contents: write
     env:
       CODEX_REV: 83086188ae0614bd882818ff1aa23f3194962012
-      HELPER_SHA: a2e592334910bcfb83cd01d8830e603281ce5bfbf5970f2c37ada97bca736cd3
+      HELPER_SHA: 65c4f7a10788052e94a5fa16a12d93d419fcbddfc27ecee6fa3577957f065ddf
       HELPER_REL: 06_api_integration/261021_RUST_NATIVE_ROLLOUT_VALIDATOR_INT_v1.0_ANFL.rs
+      AUDITOR_SHA: c8a14e151547f4ce81aff8501f7e874ad3a5dc9b753a0af1691555b1648c5e1b
+      AUDITOR_REL: 06_api_integration/261021_PY_NATIVE_LOCK_AUDIT_INT_v1.0_ANFL.py
       BINARY_NAME: 261021_BIN_NATIVE_ROLLOUT_VALIDATOR_ARM64_INT_v1.0_ANFL.bin
       MANIFEST_NAME: 261021_JSON_NATIVE_VALIDATOR_BUILD_INT_v1.0_ANFL.json
     steps:
@@ -52,6 +54,14 @@ jobs:
             --output "$task_root/validator.rs"
           actual_helper="$(shasum -a 256 "$task_root/validator.rs" | awk '{print $1}')"
           [[ "$actual_helper" == "$HELPER_SHA" ]]
+          curl --fail --silent --show-error --location \
+            --proto '=https' --tlsv1.2 --max-time 60 --max-filesize 131072 \
+            "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/$AUDITOR_REL" \
+            --output "$task_root/lock-audit.py"
+          actual_auditor="$(shasum -a 256 "$task_root/lock-audit.py" | awk '{print $1}')"
+          [[ "$actual_auditor" == "$AUDITOR_SHA" ]]
+          PYTHONDONTWRITEBYTECODE=1 python3 "$task_root/lock-audit.py" --self-test \
+            | tee "$publish_root/lock-audit-self-tests.json"
           git -c core.hooksPath=/dev/null init -q "$task_root/upstream"
           git -C "$task_root/upstream" remote add origin https://github.com/openai/codex.git
           git -C "$task_root/upstream" -c core.hooksPath=/dev/null \
@@ -64,9 +74,37 @@ jobs:
           mkdir -p "$task_root/upstream/codex-rs/rollout/src/bin"
           cp "$task_root/validator.rs" \
             "$task_root/upstream/codex-rs/rollout/src/bin/anfl-rollout-stdin-validator.rs"
+          original_lock="$(shasum -a 256 "$task_root/upstream/codex-rs/Cargo.lock" | awk '{print $1}')"
+          [[ "$original_lock" == "17cdd862471774ba7aef836aaf0a0a3ed76bd23e503b1fc7278c89d1f2719d03" ]]
+          cp "$task_root/upstream/codex-rs/Cargo.lock" "$publish_root/upstream-original.lock"
+          cd "$task_root/upstream/codex-rs"
+          cargo +1.95.0 tree -p codex-rollout --target aarch64-apple-darwin \
+            --edges normal,build,dev --depth 1 > "$publish_root/dependency-tree.txt"
+          if ! PYTHONDONTWRITEBYTECODE=1 python3 "$task_root/lock-audit.py" \
+            "$publish_root/upstream-original.lock" \
+            "$task_root/upstream/codex-rs/Cargo.lock" \
+            "$task_root/upstream/codex-rs" > "$publish_root/lock-audit.json"; then
+            cat "$publish_root/lock-audit.json"
+            exit 1
+          fi
+          cat "$publish_root/lock-audit.json"
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          audit = json.loads(
+              (Path(os.environ["PUBLISH_ROOT"]) / "lock-audit.json").read_text()
+          )
+          actual = (
+              Path(os.environ["TASK_ROOT"]) / "upstream/codex-rs/Cargo.lock"
+          ).read_bytes()
+          assert audit["code"] == "OK"
+          assert hashlib.sha256(actual).hexdigest() == audit["resolved_sha256"]
+          PY
           shasum -a 256 "$task_root/upstream/codex-rs/Cargo.lock" \
             > "$publish_root/lock-before.txt"
-          cd "$task_root/upstream/codex-rs"
           cargo +1.95.0 test --locked -p codex-rollout \
             --bin anfl-rollout-stdin-validator -- --test-threads=1 \
             2>&1 | tee "$publish_root/native-tests.txt"
@@ -75,7 +113,7 @@ jobs:
           shasum -a 256 "$task_root/upstream/codex-rs/Cargo.lock" \
             > "$publish_root/lock-after.txt"
           cmp "$publish_root/lock-before.txt" "$publish_root/lock-after.txt"
-          git -C "$task_root/upstream" diff --exit-code
+          git -C "$task_root/upstream" diff --exit-code -- . ':!codex-rs/Cargo.lock'
           cp "$CARGO_TARGET_DIR/debug/anfl-rollout-stdin-validator" \
             "$publish_root/$BINARY_NAME"
           file "$publish_root/$BINARY_NAME" | tee "$publish_root/architecture.txt"
@@ -119,6 +157,11 @@ jobs:
           assert toolchain.startswith("rustc 1.95.0 ")
           assert "host: aarch64-apple-darwin" in toolchain
           sha = hashlib.sha256(binary.read_bytes()).hexdigest()
+          lock_audit = json.loads((root / "lock-audit.json").read_text())
+          assert lock_audit["code"] == "OK"
+          assert lock_audit["resolved_sha256"] == (
+              root / "lock-before.txt"
+          ).read_text().split()[0]
           manifest = {
               "component": "The Reactor native typed record validator",
               "version": "1.0",
@@ -129,6 +172,11 @@ jobs:
               "upstream_commit": os.environ["CODEX_REV"],
               "helper_sha256": os.environ["HELPER_SHA"],
               "lock_sha256": (root / "lock-before.txt").read_text().split()[0],
+              "lock_auditor_sha256": os.environ["AUDITOR_SHA"],
+              "lock_audit": lock_audit,
+              "lock_audit_self_tests": json.loads(
+                  (root / "lock-audit-self-tests.json").read_text()
+              ),
               "rustc": toolchain,
               "target": "aarch64-apple-darwin",
               "binary": {"name": binary.name, "bytes": size, "sha256": sha},
@@ -149,6 +197,7 @@ jobs:
           with (root / os.environ["MANIFEST_NAME"]).open("x") as stream:
               json.dump(manifest, stream, indent=2, sort_keys=True)
               stream.write("\n")
+          assert (root / os.environ["MANIFEST_NAME"]).stat().st_size <= 65_536
           (root / "SHA256SUMS").write_text(
               sha + "  " + binary.name + "\n"
           )

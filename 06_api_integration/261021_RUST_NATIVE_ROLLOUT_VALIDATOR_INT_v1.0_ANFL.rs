@@ -9,8 +9,9 @@ Upstream: openai/codex@83086188ae0614bd882818ff1aa23f3194962012
 Toolchain: official codex-rs/rust-toolchain.toml pins Rust 1.95.0.
 Integration: copy this PUBLIC source into the pinned workspace at
 codex-rs/rollout/src/bin/anfl-rollout-stdin-validator.rs. The published
-codex-rollout manifest has no autobins=false; no dependency/lockfile edit
-is required. Run only separately authorized public-source CI builds.
+codex-rollout manifest autodiscovers the binary without new dependencies.
+CI separately audits the upstream release-version lock stamps before building.
+Run only separately authorized public-source CI builds.
 
 BLUF: Decode each bounded LF-framed record with the official native parser.
 No files, configuration, authentication, app-server, or rollout loader.
