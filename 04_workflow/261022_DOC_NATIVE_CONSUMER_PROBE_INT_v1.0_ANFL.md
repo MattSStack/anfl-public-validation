@@ -2,8 +2,7 @@
 # Public synthetic native consumer qualification
 
 BLUF: This probe tests stable-ID consumption of one tiny managed Paginated
-rollout by the official released Codex 0.163.0 ARM64 binary. Execution remains
-pending. It does not qualify a real recovery checkpoint or retirement.
+rollout by the official released Codex 0.163.0 ARM64 binary. Released-binary execution passed on 2026-10-22. It does not qualify a real recovery checkpoint or retirement.
 
 ## Executive
 
@@ -20,14 +19,15 @@ review. It is a managed-path stable-ID experiment, not an external-path import.
 
 ```yaml
 component: "Public synthetic native consumer qualification"
-status: "in_progress"
+status: "completed"
 version: "1.0"
 position_classification: "B"
 layer: "06"
-progress_percentage: 0
+progress_percentage: 100
 dependencies:
-  - "Independent lifecycle and proof review"
-  - "Actual remote canaries and released-binary execution"
+  - "Pinned official released binary and public catalog"
+  - "Independent lifecycle and proof reviews closed"
+  - "Actual synthetic runtime evidence below"
 ```
 
 ## Architecture
@@ -148,8 +148,9 @@ unobserved process-group closure fails qualification.
 - These controlled children were not native Codex. No local native binary,
   local native app server, operator config or recovery source was used.
 - Embedded workflow Python parsed successfully.
-- Pending: actual remote release hash, envelope canaries, native source-absence
-  refusal, positive typed projection, cold reopen and three clean closures.
+- Passed remotely: actual release and catalog hashes, envelope canaries, exact
+  native source-absence refusal, two typed projection-marker readbacks,
+  cold reopen and three clean process/group closures.
 
 ### Retained first remote result
 
@@ -182,6 +183,332 @@ default is empty. This successor explicitly writes the fixture-owned provider
 `anfl_public_offline`, matching the configured public provider. It adds a
 fixture assertion for that identity. No real source metadata, credentials,
 network policy, storage root or runtime permissions are changed.
+
+### Qualified released-binary result
+
+[Run 39752233091](https://github.com/MattSStack/anfl-public-validation/actions/runs/39752233091)
+passed at 2026-10-22 09:01:56 UTC (02:01:56 PDT), attempt 1, job 119735368813,
+commit `3bdc3e8452aed7154d639b607214443ae8de4aa6`. Actual job start/end:
+09:01:48–09:01:56 UTC. No further CI execution is needed for this frozen probe.
+
+| Observation | Actual result |
+|---|---|
+| Public fixture | 5 records, 1,484 bytes |
+| First resume | Exact identity/path/cwd/provider/model/mode/idle assertions passed |
+| Supported reads | Exact typed turn and user marker passed twice |
+| Missing source | Exact native not-found refusal before creation and in fresh process with stale SQL row |
+| Cold reopen | Passed after returning the same synthetic file |
+| Source file | Original prefix preserved; final 7 records, 3,090 bytes; contiguous ordinals |
+| Native closures | 3 exit 0, no forced shutdown, all process groups absent, no stderr |
+| Requested model turns | 0, derived from recorded methods |
+| Network/WAL | IPv4 TCP/UDP bind/outbound denied with positive controls; SQLite WAL writable |
+| Actual checkpoint/custody/retirement | Unproved; no authority granted |
+
+The two failed predecessor runs remain recorded above. The provider correction
+was based on an actual retained native error. This successful test does not
+authorize replacing provider metadata in a real recovery source.
+
+The frozen source header reflects its pre-execution authoring state; this
+qualification receipt is the current execution status.
+
+#### Complete public qualification receipt
+
+```json
+{
+  "version": "1.0",
+  "status": "qualified_public_synthetic_only",
+  "run": {
+    "id": 39752233091,
+    "attempt": 1,
+    "job_id": 119735368813,
+    "commit": "3bdc3e8452aed7154d639b607214443ae8de4aa6",
+    "tree": "441792863704f809379c55773f38bbfadb14ea5e",
+    "workflow_id": 392666701,
+    "created_at": "2026-10-22T09:01:43Z",
+    "completed_at": "2026-10-22T09:01:56Z",
+    "url": "https://github.com/MattSStack/anfl-public-validation/actions/runs/39752233091"
+  },
+  "source_sha256": "f0e3d7a5bde0e09e4953c23474bc5039c03a2aeb0d5f0db3c1fe9d2dae64ad1f",
+  "workflow_sha256": "10562f832d29e839dcf2491e03b027768e24878a18b1560b54bd0f7ea13a0e80",
+  "acceptance_checks": {
+    "releaseArchive": true,
+    "catalog": true,
+    "nativeBinary": true,
+    "networkWAL": true,
+    "twoMarkerReadbacks": true,
+    "exactMissingSourceRefusals": true,
+    "threeCleanClosures": true,
+    "zeroTurnRequests": true,
+    "nativeAppendAndOrdinals": true,
+    "qualificationScope": true
+  },
+  "result": {
+    "timestamp": "2026-10-22T09:01:53.3453910Z",
+    "clean_closures": true,
+    "current_fixture_bytes": 3090,
+    "event": "SYNTHETIC_NATIVE_CONSUMER_QUALIFIED",
+    "fixture_sha256": "9d829d24e7e119631eedc0a60b440be55b4e5218da832ee4e993e19fb1e53684",
+    "independent_custody_proven": false,
+    "input_contract": "public synthetic fixture only on a fresh remote runner",
+    "level": "INFO",
+    "native_appended_records": 2,
+    "native_network": "OS_DENIED",
+    "original_fixture_bytes": 1484,
+    "process_count": 3,
+    "real_archive_restoration_proven": false,
+    "release": "0.163.0",
+    "replacement_history_equivalence_proven": false,
+    "requested_model_turns": 0,
+    "retirement_authorized": false,
+    "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "events": [
+    {
+      "timestamp": "2026-10-22T09:01:49.6472610Z",
+      "assertions": 14,
+      "event": "FIXTURE_CONTRACT_CHECKS_OK",
+      "level": "INFO",
+      "native_processes": 0,
+      "network_requests": 0
+    },
+    {
+      "timestamp": "2026-10-22T09:01:51.0651140Z",
+      "bytes": 99551880,
+      "event": "PUBLIC_DOWNLOAD_VERIFIED",
+      "level": "INFO",
+      "sha256": "61c4d9a92521bdb42b0c1d9f87c673f6da628a06de5945cbdd9a0010632f6d10"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:51.2201060Z",
+      "bytes": 472072,
+      "event": "PUBLIC_DOWNLOAD_VERIFIED",
+      "level": "INFO",
+      "sha256": "943ca7fe1d19ed019054158303f0dbbd80b3bef43b3aa425a71aa7cb3fb52c2b"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:52.6923450Z",
+      "event": "REMOTE_ENVELOPE_CANARIES_VERIFIED",
+      "ipv6_empirically_tested": false,
+      "level": "INFO",
+      "policy": "deny network*",
+      "sqlite_wal_write": true,
+      "tcp_udp_bind_connect_errno": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "timestamp": "2026-10-22T09:01:52.7506640Z",
+      "bytes": 249952688,
+      "event": "RELEASE_BINARY_VERIFIED",
+      "level": "INFO",
+      "sha256": "8813367285524ac798dd96d1b071aea30d58708c7226fd236cd275cf1cfdee31"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:52.8919370Z",
+      "event": "INITIALIZE_OK",
+      "level": "INFO",
+      "user_agent": "anfl_public_synthetic/0.163.0 (Mac OS 15.7.9; arm64) unknown (anfl_public_synthetic; 1.0)"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:52.9584770Z",
+      "error": {
+        "code": -32600,
+        "message": "no rollout found for thread id 019a0cee-5a00-7a01-8b01-000000000001"
+      },
+      "event": "NATIVE_RPC_ERROR",
+      "level": "INFO",
+      "method": "thread/resume"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:52.9621570Z",
+      "error": {
+        "code": -32600,
+        "message": "no rollout found for thread id 019a0cee-5a00-7a01-8b01-000000000001"
+      },
+      "event": "ABSENT_SOURCE_REJECTED",
+      "level": "INFO"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:52.9633490Z",
+      "bytes": 1484,
+      "event": "SYNTHETIC_FIXTURE_CREATED",
+      "level": "INFO",
+      "path": "/Users/runner/.codex/sessions/2026/10/22/rollout-2026-10-22T00-00-00-019a0cee-5a00-7a01-8b01-000000000001.jsonl",
+      "sha256": "9d829d24e7e119631eedc0a60b440be55b4e5218da832ee4e993e19fb1e53684"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.0106060Z",
+      "cwd": "/Users/runner/work/_temp/anfl-public-native-4ibnqt3g/workspace",
+      "event": "RESUME_OK",
+      "history_mode": "paginated",
+      "level": "INFO",
+      "path": "/Users/runner/.codex/sessions/2026/10/22/rollout-2026-10-22T00-00-00-019a0cee-5a00-7a01-8b01-000000000001.jsonl",
+      "thread_id": "019a0cee-5a00-7a01-8b01-000000000001"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.0125410Z",
+      "event": "PROJECTED_MARKER_OK",
+      "level": "INFO",
+      "replacement_equivalence_proven": false
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.0218270Z",
+      "captured_bytes": 4347,
+      "errors": [],
+      "event": "NATIVE_PROCESS_CLOSED",
+      "exit": 0,
+      "forced": false,
+      "group_gone": true,
+      "level": "INFO",
+      "messages": 9,
+      "requested_methods": [
+        "initialize",
+        "thread/resume",
+        "thread/resume",
+        "thread/turns/list",
+        "thread/items/list"
+      ],
+      "stderr_tail": ""
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.0229560Z",
+      "bytes": 2287,
+      "contiguous_ordinals": true,
+      "event": "NATIVE_APPEND_VERIFIED",
+      "level": "INFO",
+      "native_appended_records": 1,
+      "original_prefix_preserved": true,
+      "records": 6,
+      "sha256": "d2c721db6a27dc7da919986fe6e46dd97e0b5514b0f70b01efb136a1e3266ba4"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.0935950Z",
+      "event": "INITIALIZE_OK",
+      "level": "INFO",
+      "user_agent": "anfl_public_synthetic/0.163.0 (Mac OS 15.7.9; arm64) unknown (anfl_public_synthetic; 1.0)"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.2531640Z",
+      "error": {
+        "code": -32600,
+        "message": "no rollout found for thread id 019a0cee-5a00-7a01-8b01-000000000001"
+      },
+      "event": "NATIVE_RPC_ERROR",
+      "level": "INFO",
+      "method": "thread/resume"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.2536050Z",
+      "error": {
+        "code": -32600,
+        "message": "no rollout found for thread id 019a0cee-5a00-7a01-8b01-000000000001"
+      },
+      "event": "ABSENT_SOURCE_REJECTED",
+      "level": "INFO"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.2603710Z",
+      "captured_bytes": 578,
+      "errors": [],
+      "event": "NATIVE_PROCESS_CLOSED",
+      "exit": 0,
+      "forced": false,
+      "group_gone": true,
+      "level": "INFO",
+      "messages": 3,
+      "requested_methods": [
+        "initialize",
+        "thread/resume"
+      ],
+      "stderr_tail": ""
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.2607890Z",
+      "bytes": 2287,
+      "contiguous_ordinals": true,
+      "event": "HELD_SOURCE_PRESERVED",
+      "level": "INFO",
+      "native_appended_records": 1,
+      "original_prefix_preserved": true,
+      "records": 6,
+      "sha256": "d2c721db6a27dc7da919986fe6e46dd97e0b5514b0f70b01efb136a1e3266ba4"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.3094110Z",
+      "event": "INITIALIZE_OK",
+      "level": "INFO",
+      "user_agent": "anfl_public_synthetic/0.163.0 (Mac OS 15.7.9; arm64) unknown (anfl_public_synthetic; 1.0)"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.3375310Z",
+      "cwd": "/Users/runner/work/_temp/anfl-public-native-4ibnqt3g/workspace",
+      "event": "RESUME_OK",
+      "history_mode": "paginated",
+      "level": "INFO",
+      "path": "/Users/runner/.codex/sessions/2026/10/22/rollout-2026-10-22T00-00-00-019a0cee-5a00-7a01-8b01-000000000001.jsonl",
+      "thread_id": "019a0cee-5a00-7a01-8b01-000000000001"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.3390380Z",
+      "event": "PROJECTED_MARKER_OK",
+      "level": "INFO",
+      "replacement_equivalence_proven": false
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.3447650Z",
+      "captured_bytes": 4234,
+      "errors": [],
+      "event": "NATIVE_PROCESS_CLOSED",
+      "exit": 0,
+      "forced": false,
+      "group_gone": true,
+      "level": "INFO",
+      "messages": 8,
+      "requested_methods": [
+        "initialize",
+        "thread/resume",
+        "thread/turns/list",
+        "thread/items/list"
+      ],
+      "stderr_tail": ""
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.3449920Z",
+      "bytes": 3090,
+      "contiguous_ordinals": true,
+      "event": "COLD_SOURCE_PREFIX_AND_ORDINALS_VERIFIED",
+      "level": "INFO",
+      "native_appended_records": 2,
+      "original_prefix_preserved": true,
+      "records": 7,
+      "sha256": "2daeaa17848d0eb844f80a430247b78a51f640eb6c235f423b8f53015c5ca402"
+    },
+    {
+      "timestamp": "2026-10-22T09:01:53.3453910Z",
+      "clean_closures": true,
+      "current_fixture_bytes": 3090,
+      "event": "SYNTHETIC_NATIVE_CONSUMER_QUALIFIED",
+      "fixture_sha256": "9d829d24e7e119631eedc0a60b440be55b4e5218da832ee4e993e19fb1e53684",
+      "independent_custody_proven": false,
+      "input_contract": "public synthetic fixture only on a fresh remote runner",
+      "level": "INFO",
+      "native_appended_records": 2,
+      "native_network": "OS_DENIED",
+      "original_fixture_bytes": 1484,
+      "process_count": 3,
+      "real_archive_restoration_proven": false,
+      "release": "0.163.0",
+      "replacement_history_equivalence_proven": false,
+      "requested_model_turns": 0,
+      "retirement_authorized": false,
+      "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012"
+    }
+  ]
+}
+```
 
 ### Full probe source
 
