@@ -1,0 +1,69 @@
+# ANFL | The Reactor™ | Layer 01 | Version 1.0 | 2026-10-22
+name: ANFL public native model input
+run-name: Native model input ${{github.run_number}}
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: anfl-public-native-model-input
+  cancel-in-progress: false
+jobs:
+  qualify:
+    if: >-
+      github.repository == 'MattSStack/anfl-public-validation' &&
+      github.event.repository.private == false
+    runs-on: macos-15
+    timeout-minutes: 12
+    steps:
+      - name: Fetch pinned public helpers and compare synthetic native inputs
+        shell: python
+        env:
+          ANFL_INPUT_REVISION: ${{github.sha}}
+          ANFL_INPUT_SHA256: f3088ea623f1c250a2b5f573cdc56c75f02a329dcc11327e175bc689f60bb45a
+        run: |
+          import hashlib
+          import os
+          import pathlib
+          import subprocess
+          import sys
+          import tempfile
+          import urllib.request
+
+          root = pathlib.Path(tempfile.mkdtemp(
+              prefix="anfl-input-helpers-", dir=os.environ["RUNNER_TEMP"]
+          ))
+          specs = [
+              (
+                  "261022_PY_NATIVE_CONSUMER_PROBE_INT_v1.0_ANFL.py",
+                  "f0e3d7a5bde0e09e4953c23474bc5039c03a2aeb0d5f0db3c1fe9d2dae64ad1f",
+              ),
+              (
+                  "261022_PY_NATIVE_MODEL_INPUT_INT_v1.0_ANFL.py",
+                  os.environ["ANFL_INPUT_SHA256"],
+              ),
+          ]
+          for name, expected in specs:
+              url = (
+                  "https://raw.githubusercontent.com/"
+                  "MattSStack/anfl-public-validation/"
+                  + os.environ["ANFL_INPUT_REVISION"]
+                  + "/06_api_integration/" + name
+              )
+              with urllib.request.urlopen(url, timeout=30) as response:
+                  data = response.read(65537)
+              if len(data) > 65536:
+                  raise RuntimeError("PUBLIC_HELPER_SIZE_LIMIT")
+              if hashlib.sha256(data).hexdigest() != expected:
+                  raise RuntimeError("PUBLIC_HELPER_SHA256")
+              (root / name).write_bytes(data)
+          helper = root / specs[1][0]
+          probe = root / specs[0][0]
+          subprocess.run(
+              [sys.executable, "-B", str(helper), "--self-test"],
+              check=True, timeout=20,
+          )
+          subprocess.run(
+              [sys.executable, "-B", str(helper), "--probe", str(probe)],
+              check=True, timeout=680,
+          )
