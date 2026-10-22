@@ -71,6 +71,7 @@ def fixture_bytes(cwd: str) -> bytes:
         "cli_version": "0.163.0",
         "source": "cli",
         "history_mode": "paginated",
+        "model_provider": "anfl_public_offline",
         "history_base": None,
     }
     payloads = [
@@ -754,6 +755,8 @@ def self_test() -> None:
     require(rows[0]["payload"]["history_base"] is None, "TEST_LINEAGE")
     require(rows[0]["payload"]["id"] == THREAD_ID, "TEST_ID")
     require(rows[0]["payload"]["history_mode"] == "paginated", "TEST_MODE")
+    require(rows[0]["payload"]["model_provider"] == "anfl_public_offline",
+            "TEST_PROVIDER")
     require(rows[1]["payload"]["window_number"] == 1, "TEST_WINDOW")
     require(REPLACEMENT_MARKER.encode() in raw, "TEST_REPLACEMENT")
     require(PROJECTION_MARKER.encode() in raw, "TEST_PROJECTION")
@@ -768,7 +771,7 @@ def self_test() -> None:
         require(str(error) == "EXPECTED_GUARD", "TEST_GUARD_IDENTITY")
     else:
         raise RuntimeError("TEST_GUARD_NOT_FAIL_CLOSED")
-    emit("FIXTURE_CONTRACT_CHECKS_OK", assertions=13,
+    emit("FIXTURE_CONTRACT_CHECKS_OK", assertions=14,
          native_processes=0, network_requests=0)
 
 

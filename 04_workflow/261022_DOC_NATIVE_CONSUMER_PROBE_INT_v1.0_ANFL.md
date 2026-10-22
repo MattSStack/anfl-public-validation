@@ -55,11 +55,11 @@ Qualified narrow result or retained failure; no automatic retry
 ### Ordered Change Set
 
 1. `06_api_integration/261022_PY_NATIVE_CONSUMER_PROBE_INT_v1.0_ANFL.py`
-   Full standalone remote-only probe: 31475 bytes; SHA256
-   `506dc4e12b468a6efaf0dbb928abd25ab445f5c85b50a7f49b2a851bd1f0635c`.
+   Full standalone remote-only probe: 31628 bytes; SHA256
+   `f0e3d7a5bde0e09e4953c23474bc5039c03a2aeb0d5f0db3c1fe9d2dae64ad1f`.
 2. `01_infrastructure/261022_YAML_NATIVE_CONSUMER_CI_INT_v1.0_ANFL.yml`
    Manual-only public-runner workflow: 2116 bytes; SHA256
-   `743a494d2efb93a79687474952d117cb0391f1c18953c007ff0baaebad5ac8e5`.
+   `10562f832d29e839dcf2491e03b027768e24878a18b1560b54bd0f7ea13a0e80`.
    The same exact bytes are mirrored under `.github/workflows/`.
 3. This full-content review records the contract, complete source and workflow.
 
@@ -140,7 +140,7 @@ unobserved process-group closure fails qualification.
 
 ### Test Plan and completed local checks
 
-- Thirteen memory-only fixture/profile assertions passed.
+- Fourteen memory-only fixture/profile assertions passed.
 - Four controlled Python-child lifecycle cases passed: matching reply with
   notification and clean EOF; oversized output refusal with owned child reaped;
   RPC deadline followed by clean EOF; injected post-spawn selector failure with
@@ -167,6 +167,21 @@ This successor adds a bounded native error diagnostic before any new run;
 fixture, environment and intended acceptance remain unchanged. Source review
 rules out UUID-date pruning and cached initial absence on this resolver path.
 The first failure remains terminal and unqualified; it is not blindly rerun.
+
+### Retained diagnostic result and exact correction
+
+[Run 39751758009](https://github.com/MattSStack/anfl-public-validation/actions/runs/39751758009),
+attempt 1, job 119733795034, commit
+`8de31fcaf1ea86180825a681439fd215d0983885`: retained native error -32600,
+`failed to load configuration: Model provider \`\` not found`.
+Isolation, release pins, initialization and initial absence refusal again passed;
+the native process exited 0 with group absence observed.
+
+The synthetic header had omitted `model_provider`; its native deserialization
+default is empty. This successor explicitly writes the fixture-owned provider
+`anfl_public_offline`, matching the configured public provider. It adds a
+fixture assertion for that identity. No real source metadata, credentials,
+network policy, storage root or runtime permissions are changed.
 
 ### Full probe source
 
@@ -244,6 +259,7 @@ def fixture_bytes(cwd: str) -> bytes:
         "cli_version": "0.163.0",
         "source": "cli",
         "history_mode": "paginated",
+        "model_provider": "anfl_public_offline",
         "history_base": None,
     }
     payloads = [
@@ -927,6 +943,8 @@ def self_test() -> None:
     require(rows[0]["payload"]["history_base"] is None, "TEST_LINEAGE")
     require(rows[0]["payload"]["id"] == THREAD_ID, "TEST_ID")
     require(rows[0]["payload"]["history_mode"] == "paginated", "TEST_MODE")
+    require(rows[0]["payload"]["model_provider"] == "anfl_public_offline",
+            "TEST_PROVIDER")
     require(rows[1]["payload"]["window_number"] == 1, "TEST_WINDOW")
     require(REPLACEMENT_MARKER.encode() in raw, "TEST_REPLACEMENT")
     require(PROJECTION_MARKER.encode() in raw, "TEST_PROJECTION")
@@ -941,7 +959,7 @@ def self_test() -> None:
         require(str(error) == "EXPECTED_GUARD", "TEST_GUARD_IDENTITY")
     else:
         raise RuntimeError("TEST_GUARD_NOT_FAIL_CLOSED")
-    emit("FIXTURE_CONTRACT_CHECKS_OK", assertions=13,
+    emit("FIXTURE_CONTRACT_CHECKS_OK", assertions=14,
          native_processes=0, network_requests=0)
 
 
@@ -990,7 +1008,7 @@ jobs:
         shell: python
         env:
           ANFL_PROBE_REVISION: ${{github.sha}}
-          ANFL_PROBE_SHA256: 506dc4e12b468a6efaf0dbb928abd25ab445f5c85b50a7f49b2a851bd1f0635c
+          ANFL_PROBE_SHA256: f0e3d7a5bde0e09e4953c23474bc5039c03a2aeb0d5f0db3c1fe9d2dae64ad1f
         run: |
           import hashlib
           import os
