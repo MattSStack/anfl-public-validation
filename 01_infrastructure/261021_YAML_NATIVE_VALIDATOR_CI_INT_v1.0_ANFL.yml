@@ -1,0 +1,189 @@
+# File: 261021_YAML_NATIVE_VALIDATOR_CI_INT_v1.0_ANFL.yml
+# Product: The Reactor(TM)
+# Status: implemented; remote compilation and synthetic tests pending.
+# Public build inputs only. No recovery payloads, caches or Actions artifacts.
+name: The Reactor native validator
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: anfl-native-validator
+  cancel-in-progress: false
+jobs:
+  native:
+    if: ${{ github.repository == 'MattSStack/anfl-public-validation' && github.event.repository.private == false }}
+    runs-on: macos-15
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      CODEX_REV: 83086188ae0614bd882818ff1aa23f3194962012
+      HELPER_SHA: a2e592334910bcfb83cd01d8830e603281ce5bfbf5970f2c37ada97bca736cd3
+      HELPER_REL: 06_api_integration/261021_RUST_NATIVE_ROLLOUT_VALIDATOR_INT_v1.0_ANFL.rs
+      BINARY_NAME: 261021_BIN_NATIVE_ROLLOUT_VALIDATOR_ARM64_INT_v1.0_ANFL.bin
+      MANIFEST_NAME: 261021_JSON_NATIVE_VALIDATOR_BUILD_INT_v1.0_ANFL.json
+    steps:
+      - name: Build and run native synthetic tests
+        shell: zsh -e {0}
+        env:
+          REPO_IS_PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          #!/bin/zsh
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == "MattSStack/anfl-public-validation" ]]
+          [[ "$REPO_IS_PRIVATE" == "false" ]]
+          [[ "$(uname -m)" == "arm64" ]]
+          [[ "$GITHUB_SHA" =~ '^[0-9a-f]{40}$' ]]
+          task_root="$(mktemp -d "$RUNNER_TEMP/anfl-native.XXXXXX")"
+          publish_root="$RUNNER_TEMP/anfl-native-publish"
+          mkdir "$publish_root"
+          trap 'rm -rf -- "$task_root"' EXIT
+          export CARGO_TARGET_DIR="$task_root/target"
+          export CARGO_BUILD_JOBS=1
+          export CARGO_INCREMENTAL=0
+          export CARGO_PROFILE_DEV_DEBUG=0
+          export CARGO_PROFILE_TEST_DEBUG=0
+          export PUBLISH_ROOT="$publish_root"
+          export TASK_ROOT="$task_root"
+          curl --fail --silent --show-error --location \
+            --proto '=https' --tlsv1.2 --max-time 60 --max-filesize 131072 \
+            "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/$HELPER_REL" \
+            --output "$task_root/validator.rs"
+          actual_helper="$(shasum -a 256 "$task_root/validator.rs" | awk '{print $1}')"
+          [[ "$actual_helper" == "$HELPER_SHA" ]]
+          git -c core.hooksPath=/dev/null init -q "$task_root/upstream"
+          git -C "$task_root/upstream" remote add origin https://github.com/openai/codex.git
+          git -C "$task_root/upstream" -c core.hooksPath=/dev/null \
+            fetch --depth=1 --no-tags origin "$CODEX_REV"
+          git -C "$task_root/upstream" -c core.hooksPath=/dev/null \
+            checkout -q --detach FETCH_HEAD
+          [[ "$(git -C "$task_root/upstream" rev-parse HEAD)" == "$CODEX_REV" ]]
+          rustup toolchain install 1.95.0 --profile minimal
+          rustc +1.95.0 -Vv > "$publish_root/rustc.txt"
+          mkdir -p "$task_root/upstream/codex-rs/rollout/src/bin"
+          cp "$task_root/validator.rs" \
+            "$task_root/upstream/codex-rs/rollout/src/bin/anfl-rollout-stdin-validator.rs"
+          shasum -a 256 "$task_root/upstream/codex-rs/Cargo.lock" \
+            > "$publish_root/lock-before.txt"
+          cd "$task_root/upstream/codex-rs"
+          cargo +1.95.0 test --locked -p codex-rollout \
+            --bin anfl-rollout-stdin-validator -- --test-threads=1 \
+            2>&1 | tee "$publish_root/native-tests.txt"
+          cargo +1.95.0 build --locked -p codex-rollout \
+            --bin anfl-rollout-stdin-validator
+          shasum -a 256 "$task_root/upstream/codex-rs/Cargo.lock" \
+            > "$publish_root/lock-after.txt"
+          cmp "$publish_root/lock-before.txt" "$publish_root/lock-after.txt"
+          git -C "$task_root/upstream" diff --exit-code
+          cp "$CARGO_TARGET_DIR/debug/anfl-rollout-stdin-validator" \
+            "$publish_root/$BINARY_NAME"
+          file "$publish_root/$BINARY_NAME" | tee "$publish_root/architecture.txt"
+          otool -L "$publish_root/$BINARY_NAME" > "$publish_root/dependencies.txt"
+          printf '%s\n' \
+            '{"timestamp":"2026-10-21T00:00:00Z","type":"compacted","payload":{"message":"synthetic"}}' \
+            | "$publish_root/$BINARY_NAME" > "$publish_root/sample.json"
+          if printf '%s\n' '{"SYNTHETIC_PRIVATE_MARKER":true}' \
+            | "$publish_root/$BINARY_NAME" > "$publish_root/invalid.json" \
+              2> "$publish_root/invalid-stderr.txt"; then
+            print -u2 'ERROR: malformed synthetic input unexpectedly succeeded'
+            exit 1
+          fi
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import sys
+
+          assert sys.version_info >= (3, 11)
+          root = Path(os.environ["PUBLISH_ROOT"])
+          binary = root / os.environ["BINARY_NAME"]
+          size = binary.stat().st_size
+          assert 0 < size <= 67_108_864
+          sample = json.loads((root / "sample.json").read_text())
+          invalid = json.loads((root / "invalid.json").read_text())
+          assert sample["code"] == "OK" and sample["records"] == 1
+          assert sample["variants"]["compacted"] == 1
+          assert invalid["code"] == "NATIVE_DECODE"
+          assert "SYNTHETIC_PRIVATE_MARKER" not in (
+              (root / "invalid.json").read_text()
+              + (root / "invalid-stderr.txt").read_text()
+          )
+          tests = (root / "native-tests.txt").read_text()
+          assert re.search(r"test result: ok\. 32 passed; 0 failed;", tests)
+          architecture = (root / "architecture.txt").read_text()
+          assert "Mach-O 64-bit executable arm64" in architecture
+          toolchain = (root / "rustc.txt").read_text()
+          assert toolchain.startswith("rustc 1.95.0 ")
+          assert "host: aarch64-apple-darwin" in toolchain
+          sha = hashlib.sha256(binary.read_bytes()).hexdigest()
+          manifest = {
+              "component": "The Reactor native typed record validator",
+              "version": "1.0",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "build_commit": os.environ["GITHUB_SHA"],
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "upstream_commit": os.environ["CODEX_REV"],
+              "helper_sha256": os.environ["HELPER_SHA"],
+              "lock_sha256": (root / "lock-before.txt").read_text().split()[0],
+              "rustc": toolchain,
+              "target": "aarch64-apple-darwin",
+              "binary": {"name": binary.name, "bytes": size, "sha256": sha},
+              "synthetic_tests_passed": 32,
+              "cli_synthetic_success": sample,
+              "cli_synthetic_failure_code": invalid["code"],
+              "dynamic_dependencies": (root / "dependencies.txt").read_text(),
+              "limits": {
+                  "aggregate_bytes": 8_388_608,
+                  "record_bytes": 4_194_304,
+                  "records": 10_000,
+                  "scratch_bytes": 8_192,
+                  "report_bytes": 4_096,
+              },
+              "scope": "Public source and synthetic inputs only; typed compatibility only.",
+              "protected_input_tested": False,
+          }
+          with (root / os.environ["MANIFEST_NAME"]).open("x") as stream:
+              json.dump(manifest, stream, indent=2, sort_keys=True)
+              stream.write("\n")
+          (root / "SHA256SUMS").write_text(
+              sha + "  " + binary.name + "\n"
+          )
+          print(json.dumps({
+              "native_tests_passed": 32,
+              "binary_bytes": size,
+              "binary_sha256": sha,
+              "protected_input_tested": False,
+          }))
+          PY
+          print 'SUCCESS: native compilation and 32 synthetic tests completed'
+      - name: Stage bounded draft Release assets
+        shell: zsh -e {0}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          #!/bin/zsh
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == "MattSStack/anfl-public-validation" ]]
+          publish_root="$RUNNER_TEMP/anfl-native-publish"
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
+          [[ "$current_main" == "$GITHUB_SHA" ]]
+          tag="anfl-native-261021-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          notes="$publish_root/release-notes.txt"
+          printf '%s\n' \
+            'The Reactor native typed record validator, public synthetic qualification.' \
+            "Upstream commit: $CODEX_REV" \
+            "Build commit: $GITHUB_SHA" \
+            "Helper SHA256: $HELPER_SHA" \
+            'No protected input was accessed. Owner input admission remains separate.' \
+            > "$notes"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --draft \
+            --title 'The Reactor native validator 1.0' --notes-file "$notes" \
+            "$publish_root/$BINARY_NAME" \
+            "$publish_root/$MANIFEST_NAME" \
+            "$publish_root/SHA256SUMS"
+          print "SUCCESS: staged draft Release $tag"
