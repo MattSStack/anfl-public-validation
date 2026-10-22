@@ -383,6 +383,12 @@ class NativeClient:
                     require(match is None, "DUPLICATE_REPLY")
                     match = message
             if match is not None:
+                if "error" in match:
+                    detail = json.dumps(match["error"], sort_keys=True)
+                    require(len(detail.encode()) <= 16_384,
+                            "RPC_ERROR_DIAGNOSTIC_CAP")
+                    emit("NATIVE_RPC_ERROR", method=method,
+                         error=match["error"])
                 return match
             require(self.process.poll() is None, "NATIVE_EARLY_EXIT")
         raise RuntimeError(f"RPC_DEADLINE:{method}")
@@ -684,6 +690,8 @@ def run_remote() -> None:
                        model=model)
                 path.write_bytes(original)
                 path.chmod(0o600)
+                emit("SYNTHETIC_FIXTURE_CREATED", path=str(path),
+                     bytes=len(original), sha256=source_pin)
                 resume(client, expected=True, path=path, cwd=workspace,
                        model=model)
                 verify_marker(client)

@@ -20,7 +20,7 @@ jobs:
         shell: python
         env:
           ANFL_PROBE_REVISION: ${{github.sha}}
-          ANFL_PROBE_SHA256: 05a7b1775e91bc889053564a06336119ec43e55b86c1bc696655b9dd91e4981b
+          ANFL_PROBE_SHA256: 506dc4e12b468a6efaf0dbb928abd25ab445f5c85b50a7f49b2a851bd1f0635c
         run: |
           import hashlib
           import os

@@ -55,11 +55,11 @@ Qualified narrow result or retained failure; no automatic retry
 ### Ordered Change Set
 
 1. `06_api_integration/261022_PY_NATIVE_CONSUMER_PROBE_INT_v1.0_ANFL.py`
-   Full standalone remote-only probe: 31016 bytes; SHA256
-   `05a7b1775e91bc889053564a06336119ec43e55b86c1bc696655b9dd91e4981b`.
+   Full standalone remote-only probe: 31475 bytes; SHA256
+   `506dc4e12b468a6efaf0dbb928abd25ab445f5c85b50a7f49b2a851bd1f0635c`.
 2. `01_infrastructure/261022_YAML_NATIVE_CONSUMER_CI_INT_v1.0_ANFL.yml`
    Manual-only public-runner workflow: 2116 bytes; SHA256
-   `adfbe46e6b881b34e687dc0a352fc607b3f8187ebe72f79a744670b3a91d812f`.
+   `743a494d2efb93a79687474952d117cb0391f1c18953c007ff0baaebad5ac8e5`.
    The same exact bytes are mirrored under `.github/workflows/`.
 3. This full-content review records the contract, complete source and workflow.
 
@@ -150,6 +150,23 @@ unobserved process-group closure fails qualification.
 - Embedded workflow Python parsed successfully.
 - Pending: actual remote release hash, envelope canaries, native source-absence
   refusal, positive typed projection, cold reopen and three clean closures.
+
+### Retained first remote result
+
+[Run 39751089024](https://github.com/MattSStack/anfl-public-validation/actions/runs/39751089024),
+attempt 1, job 119731561499, commit
+`8ffb7e3e87be90a15cce05f71dfed433e65d0e6d`: failed the first positive resume.
+The archive and catalog independently matched their pins; TCP/UDP network denial,
+SQLite WAL canary, native initialization and initial exact not-found refusal
+passed. The native child exited 0 with its process group absent and no forced
+termination. The extracted release binary was 249,952,688 bytes, SHA256
+`8813367285524ac798dd96d1b071aea30d58708c7226fd236cd275cf1cfdee31`.
+
+The failing positive response's error body was not retained in that first probe.
+This successor adds a bounded native error diagnostic before any new run;
+fixture, environment and intended acceptance remain unchanged. Source review
+rules out UUID-date pruning and cached initial absence on this resolver path.
+The first failure remains terminal and unqualified; it is not blindly rerun.
 
 ### Full probe source
 
@@ -539,6 +556,12 @@ class NativeClient:
                     require(match is None, "DUPLICATE_REPLY")
                     match = message
             if match is not None:
+                if "error" in match:
+                    detail = json.dumps(match["error"], sort_keys=True)
+                    require(len(detail.encode()) <= 16_384,
+                            "RPC_ERROR_DIAGNOSTIC_CAP")
+                    emit("NATIVE_RPC_ERROR", method=method,
+                         error=match["error"])
                 return match
             require(self.process.poll() is None, "NATIVE_EARLY_EXIT")
         raise RuntimeError(f"RPC_DEADLINE:{method}")
@@ -840,6 +863,8 @@ def run_remote() -> None:
                        model=model)
                 path.write_bytes(original)
                 path.chmod(0o600)
+                emit("SYNTHETIC_FIXTURE_CREATED", path=str(path),
+                     bytes=len(original), sha256=source_pin)
                 resume(client, expected=True, path=path, cwd=workspace,
                        model=model)
                 verify_marker(client)
@@ -965,7 +990,7 @@ jobs:
         shell: python
         env:
           ANFL_PROBE_REVISION: ${{github.sha}}
-          ANFL_PROBE_SHA256: 05a7b1775e91bc889053564a06336119ec43e55b86c1bc696655b9dd91e4981b
+          ANFL_PROBE_SHA256: 506dc4e12b468a6efaf0dbb928abd25ab445f5c85b50a7f49b2a851bd1f0635c
         run: |
           import hashlib
           import os
