@@ -406,13 +406,25 @@ def one_case(
     require(state.payload.get("model") == model, "WIRE_MODEL_MISMATCH")
     values = state.payload["input"]
     encoded = canonical(values)
-    comparison, normalized_ids = normalized_input(values)
+    require(len(values) <= 128, "CAPTURE_ITEM_DIAGNOSTIC_CAP")
+    diagnostics = []
+    for index, item in enumerate(values):
+        content = canonical(item.get("content", []))
+        diagnostics.append({
+            "index": index, "type": item.get("type"), "role": item.get("role"),
+            "id": item.get("id"), "keys": sorted(item.keys()),
+            "content_bytes": len(content),
+            "content_sha256": hashlib.sha256(content).hexdigest(),
+            "content_prefix": content[:256].decode(errors="replace"),
+            "prefix_marker": PREFIX.encode() in content,
+            "replacement_marker": probe.REPLACEMENT_MARKER.encode() in content,
+            "tail_marker": TAIL.encode() in content,
+            "request_marker": REQUEST.encode() in content,
+        })
     summary = {
         "name": name, "input": values,
         "input_sha256": hashlib.sha256(encoded).hexdigest(),
-        "comparison_sha256": hashlib.sha256(comparison).hexdigest(),
-        "comparison_bytes": len(comparison),
-        "normalized_message_ids": normalized_ids,
+        "item_diagnostics": diagnostics,
         "input_bytes": len(encoded), "input_items": len(values),
         "model": model, "captured_post_requests": state.calls,
         "fixed_response_writes": int(state.fixed_response_written),
@@ -477,6 +489,15 @@ def run(probe_path: Path) -> None:
             probe, client_type, binary, root, workspace, catalog,
             env, codex, selected, name, initial,
         )
+    for name, row in summaries.items():
+        comparison, normalization = normalized_input(row["input"])
+        row["comparison_sha256"] = hashlib.sha256(comparison).hexdigest()
+        row["comparison_bytes"] = len(comparison)
+        row["normalized_message_ids"] = normalization
+        emit("INPUT_COMPARISON_PREPARED", case=name,
+             comparison_sha256=row["comparison_sha256"],
+             comparison_bytes=row["comparison_bytes"],
+             normalized_message_ids=normalization)
     full, bounded, negative = (
         summaries["full"], summaries["bounded"], summaries["negative"]
     )

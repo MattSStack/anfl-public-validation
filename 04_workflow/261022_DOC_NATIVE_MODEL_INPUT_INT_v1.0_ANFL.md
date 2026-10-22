@@ -62,9 +62,9 @@ Pinned official release + catalog + frozen native helper
 ### Ordered Change Set and pins
 
 1. `06_api_integration/261022_PY_NATIVE_MODEL_INPUT_INT_v1.0_ANFL.py`:
-   24671 bytes; SHA256 `a04db32f2ca5fa1229c420dbbd6997fa382ac841fa30f1aaa2e1d39072622db5`.
+   25782 bytes; SHA256 `6f03880c959b7bcabe7fbaad3eb8c4a30b9d8767b843a340f18c31510237d768`.
 2. `01_infrastructure/261022_YAML_NATIVE_MODEL_INPUT_CI_INT_v1.0_ANFL.yml`:
-   2487 bytes; SHA256 `2d3d361f3333db46306b5733abe7e476a9e9ad953b0a33ea064df6ce79117dbd`.
+   2487 bytes; SHA256 `d12bdc08bb7a6d18395c03ee8190d8ce83bf8bb0eb518019612ab72e82523591`.
    Mirror the exact workflow bytes under `.github/workflows/`.
 3. This complete review contains both implementation files.
 4. The existing recovery-support ledger records admission intent and run outcomes.
@@ -186,6 +186,22 @@ The official-source spelling `localhost:port` compiled and the child exited0.
 The successor corrects only that endpoint-filter spelling and retains bounded
 stderr diagnostics. It does not widen access to any external network.
 Native initialization, model input and comparison remain unqualified here.
+
+### Retained first native-capture result
+
+[Run 39777274107](https://github.com/MattSStack/anfl-public-validation/actions/runs/39777274107),
+attempt1/job119819310414, commit
+`d851d3aaf04f2193eca19202bb72f4e1ce601411`: canaries, native initialize/resume,
+one POST, one fixed400 write, expected failed turn, native exit0/group absence,
+and receiver closure passed for Full. Normalization then refused an undeclared
+message ID. The actual refusing item was not logged; no comparison qualified.
+
+The successor retains bounded per-item identity, role, content hash/prefix and
+marker diagnostics before normalization. It collects the same three admitted
+cases before pure comparison, without changing fixtures, normalization rules,
+acceptance gates or network scope. A refusal remains a failed qualification.
+Source review does not support guessing historical-ID clearing or user-message
+merging on the inspected replay/formatting paths.
 
 ### Full model-input helper
 
@@ -598,13 +614,25 @@ def one_case(
     require(state.payload.get("model") == model, "WIRE_MODEL_MISMATCH")
     values = state.payload["input"]
     encoded = canonical(values)
-    comparison, normalized_ids = normalized_input(values)
+    require(len(values) <= 128, "CAPTURE_ITEM_DIAGNOSTIC_CAP")
+    diagnostics = []
+    for index, item in enumerate(values):
+        content = canonical(item.get("content", []))
+        diagnostics.append({
+            "index": index, "type": item.get("type"), "role": item.get("role"),
+            "id": item.get("id"), "keys": sorted(item.keys()),
+            "content_bytes": len(content),
+            "content_sha256": hashlib.sha256(content).hexdigest(),
+            "content_prefix": content[:256].decode(errors="replace"),
+            "prefix_marker": PREFIX.encode() in content,
+            "replacement_marker": probe.REPLACEMENT_MARKER.encode() in content,
+            "tail_marker": TAIL.encode() in content,
+            "request_marker": REQUEST.encode() in content,
+        })
     summary = {
         "name": name, "input": values,
         "input_sha256": hashlib.sha256(encoded).hexdigest(),
-        "comparison_sha256": hashlib.sha256(comparison).hexdigest(),
-        "comparison_bytes": len(comparison),
-        "normalized_message_ids": normalized_ids,
+        "item_diagnostics": diagnostics,
         "input_bytes": len(encoded), "input_items": len(values),
         "model": model, "captured_post_requests": state.calls,
         "fixed_response_writes": int(state.fixed_response_written),
@@ -669,6 +697,15 @@ def run(probe_path: Path) -> None:
             probe, client_type, binary, root, workspace, catalog,
             env, codex, selected, name, initial,
         )
+    for name, row in summaries.items():
+        comparison, normalization = normalized_input(row["input"])
+        row["comparison_sha256"] = hashlib.sha256(comparison).hexdigest()
+        row["comparison_bytes"] = len(comparison)
+        row["normalized_message_ids"] = normalization
+        emit("INPUT_COMPARISON_PREPARED", case=name,
+             comparison_sha256=row["comparison_sha256"],
+             comparison_bytes=row["comparison_bytes"],
+             normalized_message_ids=normalization)
     full, bounded, negative = (
         summaries["full"], summaries["bounded"], summaries["negative"]
     )
@@ -794,7 +831,7 @@ jobs:
         shell: python
         env:
           ANFL_INPUT_REVISION: ${{github.sha}}
-          ANFL_INPUT_SHA256: a04db32f2ca5fa1229c420dbbd6997fa382ac841fa30f1aaa2e1d39072622db5
+          ANFL_INPUT_SHA256: 6f03880c959b7bcabe7fbaad3eb8c4a30b9d8767b843a340f18c31510237d768
         run: |
           import hashlib
           import os
