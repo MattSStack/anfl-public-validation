@@ -1,6 +1,6 @@
 # File: 261021_YAML_NATIVE_VALIDATOR_CI_INT_v1.0_ANFL.yml
 # Product: The Reactor(TM)
-# Status: native build qualified; explicit draft-tag binding revision.
+# Status: v1.1 public native decoder/boundary qualification pending.
 # Public build inputs only. No recovery payloads, caches or Actions artifacts.
 name: The Reactor native validator
 on:
@@ -19,12 +19,12 @@ jobs:
       contents: write
     env:
       CODEX_REV: 83086188ae0614bd882818ff1aa23f3194962012
-      HELPER_SHA: 65c4f7a10788052e94a5fa16a12d93d419fcbddfc27ecee6fa3577957f065ddf
-      HELPER_REL: 06_api_integration/261021_RUST_NATIVE_ROLLOUT_VALIDATOR_INT_v1.0_ANFL.rs
+      HELPER_SHA: dabcbb09645b83389f9323768121201176514a60686bf48b0d08d3e6fbe9bcc3
+      HELPER_REL: 06_api_integration/261022_RUST_NATIVE_ROLLOUT_VALIDATOR_INT_v1.1_ANFL.rs
       AUDITOR_SHA: c8a14e151547f4ce81aff8501f7e874ad3a5dc9b753a0af1691555b1648c5e1b
       AUDITOR_REL: 06_api_integration/261021_PY_NATIVE_LOCK_AUDIT_INT_v1.0_ANFL.py
-      BINARY_NAME: 261021_BIN_NATIVE_ROLLOUT_VALIDATOR_ARM64_INT_v1.0_ANFL.bin
-      MANIFEST_NAME: 261021_JSON_NATIVE_VALIDATOR_BUILD_INT_v1.0_ANFL.json
+      BINARY_NAME: 261022_BIN_NATIVE_ROLLOUT_VALIDATOR_ARM64_INT_v1.1_ANFL.bin
+      MANIFEST_NAME: 261022_JSON_NATIVE_VALIDATOR_BUILD_INT_v1.1_ANFL.json
     steps:
       - name: Build and run native synthetic tests
         shell: zsh -e {0}
@@ -127,6 +127,18 @@ jobs:
             print -u2 'ERROR: malformed synthetic input unexpectedly succeeded'
             exit 1
           fi
+          boundary_complete='{"timestamp":"2026-10-22T00:00:00Z","type":"compacted","payload":{"message":"synthetic","replacement_history":[],"window_number":0}}'
+          boundary_incomplete='{"timestamp":"2026-10-22T00:00:00Z","type":"compacted","payload":{"message":"SYNTHETIC_BOUNDARY_PRIVATE_MARKER"}}'
+          printf '%s\n' "$boundary_complete" "$boundary_incomplete" \
+            | "$publish_root/$BINARY_NAME" --model-context-scan \
+              > "$publish_root/boundary.json"
+          if printf '%s\n' "$boundary_incomplete" "$boundary_complete" \
+            | "$publish_root/$BINARY_NAME" --model-context-scan \
+              > "$publish_root/no-boundary.json" \
+              2> "$publish_root/no-boundary-stderr.txt"; then
+            print -u2 'ERROR: newer incomplete compaction allowed fallback'
+            exit 1
+          fi
           python3 - <<'PY'
           import hashlib
           import json
@@ -145,12 +157,30 @@ jobs:
           assert sample["code"] == "OK" and sample["records"] == 1
           assert sample["variants"]["compacted"] == 1
           assert invalid["code"] == "NATIVE_DECODE"
+          boundary = json.loads((root / "boundary.json").read_text())
+          missing = json.loads((root / "no-boundary.json").read_text())
+          assert boundary["code"] == "MODEL_CONTEXT_BOUNDARY_OK"
+          assert boundary["mode"] == "model_context_scan_newest_first"
+          assert boundary["native_boundary_complete"] == 1
+          assert boundary["records"] == 2
+          assert boundary["chronological_records"] == 1
+          assert boundary["chronological_first_is_compacted"] == 1
+          assert boundary["older_records_ignored_by_scanner"] == 1
+          assert missing["code"] == "NATIVE_BOUNDARY_NOT_FOUND"
+          assert missing["native_boundary_complete"] == 0
+          assert missing["chronological_records"] == 0
+          assert missing["older_records_ignored_by_scanner"] == 0
+          assert "SYNTHETIC_BOUNDARY_PRIVATE_MARKER" not in (
+              (root / "boundary.json").read_text()
+              + (root / "no-boundary.json").read_text()
+              + (root / "no-boundary-stderr.txt").read_text()
+          )
           assert "SYNTHETIC_PRIVATE_MARKER" not in (
               (root / "invalid.json").read_text()
               + (root / "invalid-stderr.txt").read_text()
           )
           tests = (root / "native-tests.txt").read_text()
-          assert re.search(r"test result: ok\. 32 passed; 0 failed;", tests)
+          assert re.search(r"test result: ok\. 54 passed; 0 failed;", tests)
           architecture = (root / "architecture.txt").read_text()
           assert "Mach-O 64-bit executable arm64" in architecture
           toolchain = (root / "rustc.txt").read_text()
@@ -163,8 +193,8 @@ jobs:
               root / "lock-before.txt"
           ).read_text().split()[0]
           manifest = {
-              "component": "The Reactor native typed record validator",
-              "version": "1.0",
+              "component": "The Reactor native rollout validator",
+              "version": "1.1",
               "repository": os.environ["GITHUB_REPOSITORY"],
               "build_commit": os.environ["GITHUB_SHA"],
               "run_id": int(os.environ["GITHUB_RUN_ID"]),
@@ -180,9 +210,15 @@ jobs:
               "rustc": toolchain,
               "target": "aarch64-apple-darwin",
               "binary": {"name": binary.name, "bytes": size, "sha256": sha},
-              "synthetic_tests_passed": 32,
+              "synthetic_tests_passed": 54,
               "cli_synthetic_success": sample,
               "cli_synthetic_failure_code": invalid["code"],
+              "cli_native_boundary_success": boundary,
+              "cli_native_boundary_missing_code": missing["code"],
+              "native_boundary_scope": (
+                  "ModelContextScan on caller-asserted newest-first input; "
+                  "coverage, history mode and reconstruction are unproved."
+              ),
               "dynamic_dependencies": (root / "dependencies.txt").read_text(),
               "limits": {
                   "aggregate_bytes": 8_388_608,
@@ -202,13 +238,13 @@ jobs:
               sha + "  " + binary.name + "\n"
           )
           print(json.dumps({
-              "native_tests_passed": 32,
+              "native_tests_passed": 54,
               "binary_bytes": size,
               "binary_sha256": sha,
               "protected_input_tested": False,
           }))
           PY
-          print 'SUCCESS: native compilation and 32 synthetic tests completed'
+          print 'SUCCESS: native compilation and 54 synthetic tests completed'
       - name: Stage bounded draft Release assets
         shell: zsh -e {0}
         env:
@@ -220,7 +256,7 @@ jobs:
           publish_root="$RUNNER_TEMP/anfl-native-publish"
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
           [[ "$current_main" == "$GITHUB_SHA" ]]
-          tag="anfl-native-261021-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          tag="anfl-native-261022-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           # Reconcile partial tag/draft state after any failed or unknown effect.
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
             -f "ref=refs/tags/$tag" -f "sha=$GITHUB_SHA" \
@@ -249,7 +285,7 @@ jobs:
             > "$notes"
           gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" --verify-tag --draft \
-            --title 'The Reactor native validator 1.0' --notes-file "$notes" \
+            --title 'The Reactor native validator 1.1' --notes-file "$notes" \
             "$publish_root/$BINARY_NAME" \
             "$publish_root/$MANIFEST_NAME" \
             "$publish_root/SHA256SUMS"
