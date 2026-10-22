@@ -4,7 +4,9 @@
 BLUF: Observe the released Codex 0.163.0 model-request input for three public
 synthetic histories: full, bounded checkpoint suffix, and missing checkpoint.
 This distinct test requests three synthetic turns against a loopback-only
-receiver that executes no model and returns fixed HTTP 400. Runtime is pending.
+receiver that executes no model and returns fixed HTTP 400. Three native captures
+and clean closures are observed; the explicit environment-ID comparison successor
+is awaiting qualification.
 
 ## Executive
 
@@ -62,9 +64,9 @@ Pinned official release + catalog + frozen native helper
 ### Ordered Change Set and pins
 
 1. `06_api_integration/261022_PY_NATIVE_MODEL_INPUT_INT_v1.0_ANFL.py`:
-   25782 bytes; SHA256 `6f03880c959b7bcabe7fbaad3eb8c4a30b9d8767b843a340f18c31510237d768`.
+   28867 bytes; SHA256 `5ce97a732df8c16e5de97e6e18adc75e2e0edcb71febe046d827945e185b9d7c`.
 2. `01_infrastructure/261022_YAML_NATIVE_MODEL_INPUT_CI_INT_v1.0_ANFL.yml`:
-   2487 bytes; SHA256 `d12bdc08bb7a6d18395c03ee8190d8ce83bf8bb0eb518019612ab72e82523591`.
+   2487 bytes; SHA256 `edd1286813a5d51d7b7d26da28137aeb3fc6c903da59fd79270dcd8bc133d20f`.
    Mirror the exact workflow bytes under `.github/workflows/`.
 3. This complete review contains both implementation files.
 4. The existing recovery-support ledger records admission intent and run outcomes.
@@ -98,11 +100,20 @@ Successful local response writes do not prove peer acknowledgment.
 Compare canonical serialized input bytes, retaining array order and scalar
 distinctions. Object-key order is canonicalized. Persisted fixture message IDs
 are fixed and preserved. Separately generated developer/system/current-request
-message IDs may differ between turns; normalize only their declared top-level
+and current-environment message IDs may differ between turns; normalize only
+their declared top-level
 `id` fields after proving their string token is unreferenced elsewhere.
 Report each changed index, role and raw ID. Preserve all content, types, roles,
 call IDs, references, opaque values and other fields. Keep the canonical
 pre-ID-normalization hash and separately report raw-input equality.
+
+
+The current-environment exception is fixture-specific. Require exact message keys,
+user role, one input_text block with exact type/text keys, the complete native
+environment_context wrapper, no fixture markers, and penultimate position directly
+before the exact current-request block. Normalize only its unreferenced ID.
+Every byte of environment content remains in the comparison. The wrapper is not
+a general provenance or authentication proof.
 
 The positive cases must match after this declared normalization. The negative
 must differ and restore the older-prefix sentinel. The checkpoint replacement,
@@ -127,6 +138,13 @@ The
 [existing native reconstruction tests](https://github.com/openai/codex/blob/83086188ae0614bd882818ff1aa23f3194962012/codex-rs/core/src/session/rollout_reconstruction_tests.rs)
 already test current/legacy Paginated full-versus-bounded results and missing
 companion behavior. They are not rerun by this workflow.
+
+The pinned [environment renderer](https://github.com/openai/codex/blob/83086188ae0614bd882818ff1aa23f3194962012/codex-rs/core/src/context/world_state/environment.rs)
+produces the environment context as a user fragment. The
+[fragment conversion](https://github.com/openai/codex/blob/83086188ae0614bd882818ff1aa23f3194962012/codex-rs/context-fragments/src/fragment.rs)
+creates one input-text message with an initially absent ID; missing IDs are
+assigned in the native session path. This supports the explicit fixture-only
+classification, while preserving content and order in the comparison.
 
 ### Threat notes
 
@@ -203,6 +221,23 @@ acceptance gates or network scope. A refusal remains a failed qualification.
 Source review does not support guessing historical-ID clearing or user-message
 merging on the inspected replay/formatting paths.
 
+### Retained diagnostic run and explicit rule
+
+[Run 39778764415](https://github.com/MattSStack/anfl-public-validation/actions/runs/39778764415),
+attempt1/job119824357765, commit
+`33800e77251aff8ec1a1677064b017fabcf91c16`: all three native and receiver
+closures passed. Each case captured one POST and completed one fixed400 write.
+Full and bounded inputs contained replacement/tail/request, without older prefix;
+the missing-checkpoint case restored older prefix and omitted replacement.
+
+Comparison refused a newly generated current environment-context user-message ID.
+Its complete content had identical 544-byte canonical content and SHA256
+`138afa231eba1c02f17cfa76ddb58e8f902dc2ab3673af8dc712d262cc6f5795`
+across the three cases. Historical fixture IDs were preserved. This is a retained
+failure, not a qualified equality result. The successor explicitly declares the
+narrow environment-ID class described above and adds pure tests for changed
+content, missing/current-request position and unknown-message refusal.
+
 ### Full model-input helper
 
 ```python
@@ -237,6 +272,7 @@ from typing import Any
 PROBE_SHA = "f0e3d7a5bde0e09e4953c23474bc5039c03a2aeb0d5f0db3c1fe9d2dae64ad1f"
 PREFIX = "ANFL_PUBLIC_OLDER_PREFIX_MUST_BE_DISCARDED"
 TAIL = "ANFL_PUBLIC_MODEL_TAIL_MUST_BE_RETAINED"
+REPLACEMENT = "ANFL_PUBLIC_SYNTHETIC_REPLACEMENT_261022"
 REQUEST = "ANFL_PUBLIC_CAPTURE_ONLY_DO_NOT_EXECUTE_TOOLS"
 MAX_BODY = 1_048_576
 ERROR_BODY = json.dumps({
@@ -287,6 +323,11 @@ def cases(base: bytes) -> dict[str, bytes]:
             },
         }
 
+    require(
+        rows[1]["payload"]["replacement_history"][0]["content"] == [
+            {"type": "input_text", "text": REPLACEMENT}
+        ], "QUALIFIED_REPLACEMENT_MARKER",
+    )
     rows[1]["payload"]["replacement_history"][0]["id"] = (
         "msg_public_replacement"
     )
@@ -307,7 +348,7 @@ def cases(base: bytes) -> dict[str, bytes]:
 def normalized_input(
     values: list[dict[str, Any]],
 ) -> tuple[bytes, list[dict[str, Any]]]:
-    """Normalize only unreferenced fresh instruction/current-user message IDs.
+    """Normalize declared fresh instruction/request/environment message IDs.
 
     Fixed historical fixture IDs and every other field remain unchanged.
     No call IDs, references, content, roles, order or opaque values are removed.
@@ -327,15 +368,44 @@ def normalized_input(
                 "VOLATILE_MESSAGE_ID_TYPE")
         content = canonical(item.get("content", []))
         role = item.get("role")
-        allowed = role in ("developer", "system") or (
+        current_request = (
             role == "user" and REQUEST.encode() in content
             and PREFIX.encode() not in content and TAIL.encode() not in content
         )
+        blocks = item.get("content")
+        environment = False
+        if (
+            role == "user"
+            and set(item) == {"type", "role", "id", "content"}
+            and isinstance(blocks, list)
+            and len(blocks) == 1
+            and isinstance(blocks[0], dict)
+            and set(blocks[0]) == {"type", "text"}
+            and blocks[0].get("type") == "input_text"
+            and isinstance(blocks[0].get("text"), str)
+            and index == len(copied) - 2
+        ):
+            text = blocks[0]["text"]
+            following = copied[index + 1]
+            environment = (
+                text.startswith("<environment_context>\n")
+                and text.endswith("\n</environment_context>")
+                and all(marker not in text
+                        for marker in (PREFIX, TAIL, REPLACEMENT, REQUEST))
+                and following.get("type") == "message"
+                and following.get("role") == "user"
+                and following.get("content") == [
+                    {"type": "input_text", "text": REQUEST}
+                ]
+            )
+        allowed = role in ("developer", "system") or current_request or environment
         require(allowed, "UNDECLARED_MESSAGE_ID_NORMALIZATION")
         require(raw.count(canonical(identity)) == 1, "MESSAGE_ID_IS_REFERENCED")
         item["id"] = f"ANFL_PUBLIC_VOLATILE_MESSAGE_ID_AT_{index}"
         changes.append({"index": index, "field": "id",
-                        "role": role, "raw_id": identity})
+                        "role": role, "raw_id": identity,
+                        "class": "current_environment" if environment else
+                        "current_request" if current_request else "instruction"})
     return canonical(copied), changes
 
 
@@ -731,7 +801,7 @@ def run(probe_path: Path) -> None:
         ),
         comparison=(
             "Canonical ordered input JSON; only declared unreferenced fresh "
-            "instruction/current-request message IDs normalized. "
+            "instruction/current-request/current-environment IDs normalized. "
             "All fixed historical IDs and remaining values preserved."
         ),
         cases={name: {k: v for k, v in row.items() if k != "input"}
@@ -781,6 +851,38 @@ def self_test() -> None:
         require(str(error) == "MESSAGE_ID_IS_REFERENCED", "REFERENCE_GUARD")
     else:
         raise RuntimeError("REFERENCED_ID_NORMALIZED")
+    environment = {
+        "type": "message", "role": "user", "id": "msg_environment_a",
+        "content": [{"type": "input_text",
+                     "text": "<environment_context>\n"
+                     "  <cwd>/public/test</cwd>\n</environment_context>"}],
+    }
+    pair = [environment, first[0]]
+    alternate = json.loads(json.dumps(pair))
+    alternate[0]["id"] = "msg_environment_b"
+    require(normalized_input(pair)[0] == normalized_input(alternate)[0],
+            "DECLARED_ENVIRONMENT_ID_COMPARISON")
+    alternate[0]["content"][0]["text"] = (
+        "<environment_context>\n  <cwd>/changed</cwd>\n</environment_context>"
+    )
+    require(normalized_input(pair)[0] != normalized_input(alternate)[0],
+            "ENVIRONMENT_CONTENT_CHANGE_MUST_SURVIVE")
+    for malformed in (
+        [environment],
+        [{**environment, "content": [{"type": "input_text",
+          "text": "<environment_context>\\n" + REPLACEMENT +
+          "\\n</environment_context>"}]}, first[0]],
+        [environment, {"type": "message", "role": "user", "content": []}],
+        [{"type": "message", "role": "user", "id": "msg_unknown",
+          "content": [{"type": "input_text", "text": "unclassified"}]}, first[0]],
+    ):
+        try:
+            normalized_input(malformed)
+        except RuntimeError as error:
+            require(str(error) == "UNDECLARED_MESSAGE_ID_NORMALIZATION",
+                    "ENVIRONMENT_POSITION_GUARD")
+        else:
+            raise RuntimeError("UNDECLARED_ENVIRONMENT_ID_NORMALIZED")
     emit("PURE_INPUT_CONTRACT_CHECKS_OK", native_processes=0)
 
 
@@ -831,7 +933,7 @@ jobs:
         shell: python
         env:
           ANFL_INPUT_REVISION: ${{github.sha}}
-          ANFL_INPUT_SHA256: 6f03880c959b7bcabe7fbaad3eb8c4a30b9d8767b843a340f18c31510237d768
+          ANFL_INPUT_SHA256: 5ce97a732df8c16e5de97e6e18adc75e2e0edcb71febe046d827945e185b9d7c
         run: |
           import hashlib
           import os

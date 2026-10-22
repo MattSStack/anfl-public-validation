@@ -29,6 +29,7 @@ from typing import Any
 PROBE_SHA = "f0e3d7a5bde0e09e4953c23474bc5039c03a2aeb0d5f0db3c1fe9d2dae64ad1f"
 PREFIX = "ANFL_PUBLIC_OLDER_PREFIX_MUST_BE_DISCARDED"
 TAIL = "ANFL_PUBLIC_MODEL_TAIL_MUST_BE_RETAINED"
+REPLACEMENT = "ANFL_PUBLIC_SYNTHETIC_REPLACEMENT_261022"
 REQUEST = "ANFL_PUBLIC_CAPTURE_ONLY_DO_NOT_EXECUTE_TOOLS"
 MAX_BODY = 1_048_576
 ERROR_BODY = json.dumps({
@@ -79,6 +80,11 @@ def cases(base: bytes) -> dict[str, bytes]:
             },
         }
 
+    require(
+        rows[1]["payload"]["replacement_history"][0]["content"] == [
+            {"type": "input_text", "text": REPLACEMENT}
+        ], "QUALIFIED_REPLACEMENT_MARKER",
+    )
     rows[1]["payload"]["replacement_history"][0]["id"] = (
         "msg_public_replacement"
     )
@@ -99,7 +105,7 @@ def cases(base: bytes) -> dict[str, bytes]:
 def normalized_input(
     values: list[dict[str, Any]],
 ) -> tuple[bytes, list[dict[str, Any]]]:
-    """Normalize only unreferenced fresh instruction/current-user message IDs.
+    """Normalize declared fresh instruction/request/environment message IDs.
 
     Fixed historical fixture IDs and every other field remain unchanged.
     No call IDs, references, content, roles, order or opaque values are removed.
@@ -119,15 +125,44 @@ def normalized_input(
                 "VOLATILE_MESSAGE_ID_TYPE")
         content = canonical(item.get("content", []))
         role = item.get("role")
-        allowed = role in ("developer", "system") or (
+        current_request = (
             role == "user" and REQUEST.encode() in content
             and PREFIX.encode() not in content and TAIL.encode() not in content
         )
+        blocks = item.get("content")
+        environment = False
+        if (
+            role == "user"
+            and set(item) == {"type", "role", "id", "content"}
+            and isinstance(blocks, list)
+            and len(blocks) == 1
+            and isinstance(blocks[0], dict)
+            and set(blocks[0]) == {"type", "text"}
+            and blocks[0].get("type") == "input_text"
+            and isinstance(blocks[0].get("text"), str)
+            and index == len(copied) - 2
+        ):
+            text = blocks[0]["text"]
+            following = copied[index + 1]
+            environment = (
+                text.startswith("<environment_context>\n")
+                and text.endswith("\n</environment_context>")
+                and all(marker not in text
+                        for marker in (PREFIX, TAIL, REPLACEMENT, REQUEST))
+                and following.get("type") == "message"
+                and following.get("role") == "user"
+                and following.get("content") == [
+                    {"type": "input_text", "text": REQUEST}
+                ]
+            )
+        allowed = role in ("developer", "system") or current_request or environment
         require(allowed, "UNDECLARED_MESSAGE_ID_NORMALIZATION")
         require(raw.count(canonical(identity)) == 1, "MESSAGE_ID_IS_REFERENCED")
         item["id"] = f"ANFL_PUBLIC_VOLATILE_MESSAGE_ID_AT_{index}"
         changes.append({"index": index, "field": "id",
-                        "role": role, "raw_id": identity})
+                        "role": role, "raw_id": identity,
+                        "class": "current_environment" if environment else
+                        "current_request" if current_request else "instruction"})
     return canonical(copied), changes
 
 
@@ -523,7 +558,7 @@ def run(probe_path: Path) -> None:
         ),
         comparison=(
             "Canonical ordered input JSON; only declared unreferenced fresh "
-            "instruction/current-request message IDs normalized. "
+            "instruction/current-request/current-environment IDs normalized. "
             "All fixed historical IDs and remaining values preserved."
         ),
         cases={name: {k: v for k, v in row.items() if k != "input"}
@@ -573,6 +608,38 @@ def self_test() -> None:
         require(str(error) == "MESSAGE_ID_IS_REFERENCED", "REFERENCE_GUARD")
     else:
         raise RuntimeError("REFERENCED_ID_NORMALIZED")
+    environment = {
+        "type": "message", "role": "user", "id": "msg_environment_a",
+        "content": [{"type": "input_text",
+                     "text": "<environment_context>\n"
+                     "  <cwd>/public/test</cwd>\n</environment_context>"}],
+    }
+    pair = [environment, first[0]]
+    alternate = json.loads(json.dumps(pair))
+    alternate[0]["id"] = "msg_environment_b"
+    require(normalized_input(pair)[0] == normalized_input(alternate)[0],
+            "DECLARED_ENVIRONMENT_ID_COMPARISON")
+    alternate[0]["content"][0]["text"] = (
+        "<environment_context>\n  <cwd>/changed</cwd>\n</environment_context>"
+    )
+    require(normalized_input(pair)[0] != normalized_input(alternate)[0],
+            "ENVIRONMENT_CONTENT_CHANGE_MUST_SURVIVE")
+    for malformed in (
+        [environment],
+        [{**environment, "content": [{"type": "input_text",
+          "text": "<environment_context>\\n" + REPLACEMENT +
+          "\\n</environment_context>"}]}, first[0]],
+        [environment, {"type": "message", "role": "user", "content": []}],
+        [{"type": "message", "role": "user", "id": "msg_unknown",
+          "content": [{"type": "input_text", "text": "unclassified"}]}, first[0]],
+    ):
+        try:
+            normalized_input(malformed)
+        except RuntimeError as error:
+            require(str(error) == "UNDECLARED_MESSAGE_ID_NORMALIZATION",
+                    "ENVIRONMENT_POSITION_GUARD")
+        else:
+            raise RuntimeError("UNDECLARED_ENVIRONMENT_ID_NORMALIZED")
     emit("PURE_INPUT_CONTRACT_CHECKS_OK", native_processes=0)
 
 
