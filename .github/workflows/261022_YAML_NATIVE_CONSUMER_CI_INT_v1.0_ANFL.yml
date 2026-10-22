@@ -1,0 +1,60 @@
+# ANFL | The Reactor™ | Layer 01 | Version 1.0 | 2026-10-22
+name: ANFL public synthetic native consumer
+run-name: Synthetic native consumer ${{github.run_number}}
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: anfl-public-native-consumer
+  cancel-in-progress: false
+jobs:
+  qualify:
+    if: >-
+      github.repository == 'MattSStack/anfl-public-validation' &&
+      github.event.repository.private == false
+    runs-on: macos-15
+    timeout-minutes: 12
+    steps:
+      - name: Fetch pinned public helper and qualify synthetic native consumption
+        shell: python
+        env:
+          ANFL_PROBE_REVISION: ${{github.sha}}
+          ANFL_PROBE_SHA256: 05a7b1775e91bc889053564a06336119ec43e55b86c1bc696655b9dd91e4981b
+        run: |
+          import hashlib
+          import os
+          import pathlib
+          import subprocess
+          import sys
+          import tempfile
+          import urllib.request
+
+          path = (
+              "06_api_integration/"
+              "261022_PY_NATIVE_CONSUMER_PROBE_INT_v1.0_ANFL.py"
+          )
+          url = (
+              "https://raw.githubusercontent.com/"
+              "MattSStack/anfl-public-validation/"
+              + os.environ["ANFL_PROBE_REVISION"] + "/" + path
+          )
+          with urllib.request.urlopen(url, timeout=30) as response:
+              data = response.read(65537)
+          if len(data) > 65536:
+              raise RuntimeError("PUBLIC_HELPER_SIZE_LIMIT")
+          digest = hashlib.sha256(data).hexdigest()
+          if digest != os.environ["ANFL_PROBE_SHA256"]:
+              raise RuntimeError("PUBLIC_HELPER_SHA256")
+          root = pathlib.Path(tempfile.mkdtemp(
+              prefix="anfl-probe-helper-", dir=os.environ["RUNNER_TEMP"]
+          ))
+          helper = root / pathlib.Path(path).name
+          helper.write_bytes(data)
+          subprocess.run(
+              [sys.executable, "-B", str(helper), "--self-test"],
+              check=True, timeout=20,
+          )
+          subprocess.run(
+              [sys.executable, "-B", str(helper)], check=True, timeout=680
+          )
